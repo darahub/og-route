@@ -42,6 +42,20 @@ export class ZeroGComputeService {
     }
 
     try {
+      // Check if we're in a browser environment and handle gracefully
+      if (typeof window !== 'undefined' && typeof process === 'undefined') {
+        console.warn('0G Compute Network is not available in browser environment. Using fallback mode.');
+        this.isInitialized = true;
+        return;
+      }
+
+      // Additional check: if process exists but has browser flag, we're in browser
+      if (typeof process !== 'undefined' && process.browser) {
+        console.warn('0G Compute Network is not available in browser environment. Using fallback mode.');
+        this.isInitialized = true;
+        return;
+      }
+
       // Always use private key for server-side applications
       console.log('Initializing 0G broker with private key...');
       const provider = new ethers.JsonRpcProvider("https://evmrpc-testnet.0g.ai");
@@ -53,7 +67,9 @@ export class ZeroGComputeService {
                         import.meta.env.VITE_ZEROG_PRIVATE_KEY;
       
       if (!privateKey) {
-        throw new Error('No private key found in environment variables. Please set VITE_ZEROG_PRIVATE_KEY in your .env file');
+        console.warn('No private key found in environment variables. 0G Compute Network will not be available.');
+        this.isInitialized = true;
+        return;
       }
       
       const wallet = new ethers.Wallet(privateKey, provider);
@@ -72,7 +88,9 @@ export class ZeroGComputeService {
       console.log('0G Compute Network broker initialized successfully with private key');
     } catch (error) {
       console.error('Failed to initialize 0G broker:', error);
-      throw new Error('Unable to initialize 0G Compute Network broker: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.warn('0G Compute Network will not be available. Using fallback mode.');
+      this.isInitialized = true;
+      // Don't throw error - allow app to continue with fallback functionality
     }
   }
 

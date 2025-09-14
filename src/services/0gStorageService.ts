@@ -49,10 +49,25 @@ export class ZeroGStorageService {
 
   private initializeZeroG(): void {
     try {
+      // Check if we're in a browser environment and handle gracefully
+      if (typeof window !== 'undefined' && typeof process === 'undefined') {
+        console.warn('0G Storage is not available in browser environment. Using fallback mode.');
+        this.isInitialized = true;
+        return;
+      }
+
+      // Additional check: if process exists but has browser flag, we're in browser
+      if (typeof process !== 'undefined' && process.browser) {
+        console.warn('0G Storage is not available in browser environment. Using fallback mode.');
+        this.isInitialized = true;
+        return;
+      }
+
       const config = this.getConfig();
       
       if (!config.rpcUrl || !config.indexerRpc || !config.privateKey) {
         console.warn('0G Storage configuration not found. Decentralized storage will be disabled.');
+        this.isInitialized = true;
         return;
       }
 
@@ -72,7 +87,9 @@ export class ZeroGStorageService {
       console.log('✅ 0G Storage initialized successfully');
     } catch (error) {
       console.error('Failed to initialize 0G Storage:', error);
-      this.isInitialized = false;
+      console.warn('0G Storage will not be available. Using fallback mode.');
+      this.isInitialized = true;
+      // Don't throw error - allow app to continue with fallback functionality
     }
   }
 

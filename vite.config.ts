@@ -25,6 +25,18 @@ export default defineConfig({
     'process.platform': '"browser"',
     'process.version': '"v16.0.0"',
     'process.browser': 'true',
+    // Define Node.js modules as empty objects to prevent import errors
+    // Note: crypto is handled specially since it's read-only in browsers
+    'stream': '{}',
+    'fs': '{}',
+    'os': '{}',
+    'path': '{}',
+    'util': '{}',
+    'child_process': '{}',
+    'net': '{}',
+    'tls': '{}',
+    'vm': '{}',
+    'readline': '{}',
   },
   resolve: {
     alias: {
@@ -32,7 +44,7 @@ export default defineConfig({
       stream: 'stream-browserify',
       crypto: 'crypto-browserify',
       'node:crypto': 'crypto-browserify',
-      // Remove process alias to let custom polyfills handle it
+      // Use custom polyfills for Node.js modules
       os: 'os-browserify/browser',
       path: 'path-browserify',
       util: resolve(__dirname, 'src/polyfills/util-polyfill.js'),

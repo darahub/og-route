@@ -38,6 +38,7 @@ export default defineConfig({
       util: resolve(__dirname, 'src/polyfills/util-polyfill.js'),
       assert: resolve(__dirname, 'src/polyfills/assert-polyfill.js'),
       fs: resolve(__dirname, 'src/polyfills/fs'),
+      'node:fs/promises': resolve(__dirname, 'src/polyfills/fs/promises.js'),
       net: resolve(__dirname, 'src/polyfills/net-polyfill.js'),
       tls: resolve(__dirname, 'src/polyfills/tls-polyfill.js'),
       child_process: resolve(__dirname, 'src/polyfills/child-process-polyfill.js'),

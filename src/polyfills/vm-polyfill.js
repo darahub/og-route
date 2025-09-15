@@ -2,12 +2,9 @@
 export const createContext = (sandbox) => sandbox || {};
 
 export const runInContext = (code, sandbox, options) => {
-  // Basic evaluation - be careful with this in production
-  try {
-    return eval(code);
-  } catch (error) {
-    throw new Error(`VM execution error: ${error.message}`);
-  }
+  // Safe polyfill - return empty object instead of eval
+  console.warn('VM.runInContext called in browser environment - returning empty object');
+  return {};
 };
 
 export const runInNewContext = (code, sandbox, options) => {

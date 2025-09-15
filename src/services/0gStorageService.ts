@@ -1,5 +1,4 @@
 // 0G Storage service for decentralized traffic data storage
-import { ZgFile, Indexer, KvClient } from '@0glabs/0g-ts-sdk';
 import { ethers } from 'ethers';
 import { 
   TrafficPattern, 
@@ -30,14 +29,20 @@ interface DownloadResult {
 
 export class ZeroGStorageService {
   private static instance: ZeroGStorageService;
-  private indexer: Indexer;
-  private provider: ethers.JsonRpcProvider;
-  private signer: ethers.Wallet;
-  private kvClient?: KvClient;
+  private indexer: any = null;
+  private provider: any = null;
+  private signer: any = null;
+  private kvClient?: any = null;
   private isInitialized = false;
+  private zgFileClass: any = null;
+  private indexerClass: any = null;
+  private kvClientClass: any = null;
 
   private constructor() {
-    this.initializeZeroG();
+    // Initialize asynchronously - don't await to avoid blocking constructor
+    this.initializeZeroG().catch(error => {
+      console.error('Failed to initialize 0G Storage:', error);
+    });
   }
 
   static getInstance(): ZeroGStorageService {
@@ -47,7 +52,7 @@ export class ZeroGStorageService {
     return ZeroGStorageService.instance;
   }
 
-  private initializeZeroG(): void {
+  private async initializeZeroG(): Promise<void> {
     try {
       // Check if we're in a browser environment and handle gracefully
       if (typeof window !== 'undefined' && typeof process === 'undefined') {
@@ -71,16 +76,28 @@ export class ZeroGStorageService {
         return;
       }
 
+      // Dynamically import 0G libraries only when needed
+      try {
+        const { ZgFile, Indexer, KvClient } = await import('@0glabs/0g-ts-sdk');
+        this.zgFileClass = ZgFile;
+        this.indexerClass = Indexer;
+        this.kvClientClass = KvClient;
+      } catch (importError) {
+        console.warn('Failed to import 0G libraries:', importError);
+        this.isInitialized = true;
+        return;
+      }
+
       // Initialize provider and signer
       this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
       this.signer = new ethers.Wallet(config.privateKey, this.provider);
 
       // Initialize indexer
-      this.indexer = new Indexer(config.indexerRpc);
+      this.indexer = new this.indexerClass(config.indexerRpc);
 
       // Initialize KV client if endpoint provided
       if (config.kvEndpoint) {
-        this.kvClient = new KvClient(config.kvEndpoint);
+        this.kvClient = new this.kvClientClass(config.kvEndpoint);
       }
 
       this.isInitialized = true;
@@ -126,7 +143,7 @@ export class ZeroGStorageService {
       
       // Create blob from JSON data
       const blob = new Blob([jsonData], { type: 'application/json' });
-      const file = new ZgFile(blob, filename);
+      const file = new this.zgFileClass(blob, filename);
 
       // Generate Merkle tree for verification
       const [tree, treeErr] = await file.merkleTree();

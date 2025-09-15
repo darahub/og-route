@@ -1,6 +1,5 @@
 // 0G Compute Network SDK integration for AI traffic analysis
 import { ethers } from "ethers";
-import { createZGComputeNetworkBroker } from "@0glabs/0g-serving-broker";
 import { TrafficDataStorageService } from "./trafficDataStorage";
 import { TrafficDataCollection } from "../types/trafficStorage";
 
@@ -82,7 +81,15 @@ export class ZeroGComputeService {
         console.warn('⚠️ Wallet has low ETH balance. This might cause signature issues.');
       }
       
-        this.broker = await createZGComputeNetworkBroker(wallet);
+        // Dynamically import 0G broker
+        try {
+          const { createZGComputeNetworkBroker } = await import("@0glabs/0g-serving-broker");
+          this.broker = await createZGComputeNetworkBroker(wallet);
+        } catch (importError) {
+          console.warn('Failed to import 0G broker:', importError);
+          this.isInitialized = true;
+          return;
+        }
       
       this.isInitialized = true;
       console.log('0G Compute Network broker initialized successfully with private key');

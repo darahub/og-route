@@ -67,7 +67,7 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
           'ui-vendor': ['lucide-react', 'recharts'],
           'crypto-vendor': ['ethers', 'crypto-browserify', 'buffer'],
-          '0g-vendor': ['@0glabs/0g-serving-broker', '@0glabs/0g-ts-sdk'],
+          // 0G libraries are now dynamically imported, so they won't be in vendor chunks
         },
       },
     },

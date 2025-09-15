@@ -61,6 +61,18 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: [],
+      output: {
+        manualChunks: {
+          // Separate vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom'],
+          'ui-vendor': ['lucide-react', 'recharts'],
+          'crypto-vendor': ['ethers', 'crypto-browserify', 'buffer'],
+          '0g-vendor': ['@0glabs/0g-serving-broker', '@0glabs/0g-ts-sdk'],
+        },
+      },
     },
+    chunkSizeWarningLimit: 1000,
+    target: 'esnext',
+    minify: 'esbuild',
   },
 });

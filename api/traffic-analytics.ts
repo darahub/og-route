@@ -18,18 +18,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       lng: parseFloat(lng as string)
     };
 
-    const { ZeroGComputeService } = await import('../src/services/0gComputeService');
-    
-    const analytics = await ZeroGComputeService.getTrafficAnalytics(location);
-    
-    const hotspots = await ZeroGComputeService.getNearbyHotspots(location, 10);
-
+    // Return mock analytics since 0G services won't work in serverless
     const response = {
       location,
       timeframe,
-      analytics,
-      hotspots,
-      timestamp: new Date().toISOString()
+      analytics: {
+        averageCongestion: 45,
+        peakHours: ['7:00-9:00', '17:00-19:00'],
+        averageSpeed: 35,
+        totalIncidents: 2
+      },
+      hotspots: [
+        {
+          id: 'mock-hotspot-1',
+          location: { lat: location.lat + 0.01, lng: location.lng + 0.01 },
+          severity: 'moderate',
+          description: 'Mock traffic hotspot'
+        }
+      ],
+      timestamp: new Date().toISOString(),
+      note: '0G analytics services not available in serverless environment'
     };
 
     res.status(200).json(response);

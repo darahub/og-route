@@ -1,0 +1,186 @@
+{
+  "metadata": [
+    {
+      "id": "test_1759689208557_6uyw1u1gl",
+      "rootHash": "0x26d09042b952000d691073bcdf344c855dd42f6ebeef8c34e2de35f41eee1e91",
+      "txHash": {
+        "txHash": "0x2e5679264e859bcd7f1452d4104ecdca7165ae7414f7f180b460717644d4c47e",
+        "rootHash": "0x26d09042b952000d691073bcdf344c855dd42f6ebeef8c34e2de35f41eee1e91"
+      },
+      "timestamp": "2025-10-05T18:33:28.543Z",
+      "dataType": "test",
+      "description": "test - 10/5/2025, 7:33:28 PM",
+      "metadata": {},
+      "createdAt": "2025-10-05T18:33:28.557Z"
+    },
+    {
+      "id": "route_data_1759690042487_yd5ul1hyg",
+      "rootHash": "0xcda7e93665681913fbebb48a47b9e32997b65055903e2450a58f8a2c72a9f61c",
+      "txHash": {
+        "txHash": "0xaca37c347a62bfa886fa562cdbbd0bdc57bc5e0a15e4bdbfdbd3bbabbaa33976",
+        "rootHash": "0xcda7e93665681913fbebb48a47b9e32997b65055903e2450a58f8a2c72a9f61c"
+      },
+      "timestamp": "2025-10-05T18:47:22.486Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/5/2025, 7:47:22 PM",
+      "metadata": {
+        "destination": "abuja",
+        "routeCount": 2
+      },
+      "createdAt": "2025-10-05T18:47:22.487Z"
+    },
+    {
+      "id": "traffic_conditions_1759690052281_578hlrv8p",
+      "rootHash": "0x5f6ef2f2c851d80aa47f9d2fd11a965a48406e02ea8ef37f1e2571edb2ddf104",
+      "txHash": {
+        "txHash": "0x6d05cd24e572cf61371f9d6aa720a1072a4ae1c27f2b14f4c9a82e9440f1e543",
+        "rootHash": "0x5f6ef2f2c851d80aa47f9d2fd11a965a48406e02ea8ef37f1e2571edb2ddf104"
+      },
+      "timestamp": "2025-10-05T18:47:32.280Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 7:47:32 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T18:47:32.281Z"
+    },
+    {
+      "id": "traffic_conditions_1759690220567_8snf7h659",
+      "rootHash": "0xe1013a5353d7e393f1c50f082419e575905085d26f54c2ef4368d08f9421a7e1",
+      "txHash": {
+        "txHash": "0x5180757edea92a1ca282f45c2662c88ee830d29a2fe37da42b7c91e822ff137b",
+        "rootHash": "0xe1013a5353d7e393f1c50f082419e575905085d26f54c2ef4368d08f9421a7e1"
+      },
+      "timestamp": "2025-10-05T18:50:20.567Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 7:50:20 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T18:50:20.567Z"
+    },
+    {
+      "id": "route_data_1759691460274_li4ze4yph",
+      "rootHash": "0x398a7ed3f07336ce28dd660d7723554fa9c7617406005770cfcd0e680c49a8ad",
+      "txHash": {
+        "txHash": "0xbf6c01e69cba384bdc8f329ac6b57e32b6195a12b74d80c1f4d7baa21c197b5b",
+        "rootHash": "0x398a7ed3f07336ce28dd660d7723554fa9c7617406005770cfcd0e680c49a8ad"
+      },
+      "timestamp": "2025-10-05T19:11:00.273Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/5/2025, 8:11:00 PM",
+      "metadata": {
+        "destination": "adamawa",
+        "routeCount": 3
+      },
+      "createdAt": "2025-10-05T19:11:00.274Z"
+    },
+    {
+      "id": "traffic_conditions_1759691463955_l0335cot1",
+      "rootHash": "0x606f4ed109d31df35bc49d566bb45f0fa62b5ce434ab877e91119e5daad7ff42",
+      "txHash": {
+        "txHash": "0xef685e488dafb66117192fb357dc566455db266c767cf4b4ab8356bd48cb49a8",
+        "rootHash": "0x606f4ed109d31df35bc49d566bb45f0fa62b5ce434ab877e91119e5daad7ff42"
+      },
+      "timestamp": "2025-10-05T19:11:03.954Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 8:11:03 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T19:11:03.955Z"
+    },
+    {
+      "id": "traffic_conditions_1759691910583_cl9w3qias",
+      "rootHash": "0xf66fea106a1194279f9f3299aaae01c49ff8851e2836f2fea7c83ecb87cbc11d",
+      "txHash": {
+        "txHash": "0xe08790eefae2b39635d28f1c6bfa3e94e36ba347375041ad093806608c4ae94e",
+        "rootHash": "0xf66fea106a1194279f9f3299aaae01c49ff8851e2836f2fea7c83ecb87cbc11d"
+      },
+      "timestamp": "2025-10-05T19:18:30.583Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 8:18:30 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T19:18:30.583Z"
+    },
+    {
+      "id": "route_data_1759692052133_paz3y0j2o",
+      "rootHash": "0xe686ad3b0e143741f5c0e31f7c68a152af8146ee28199eed5b249c046e0f6c5c",
+      "txHash": {
+        "txHash": "0xb473e6361b48dd7993f2ee87d5c535adb732e1b57e48411d06f78e0163140a79",
+        "rootHash": "0xe686ad3b0e143741f5c0e31f7c68a152af8146ee28199eed5b249c046e0f6c5c"
+      },
+      "timestamp": "2025-10-05T19:20:52.133Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/5/2025, 8:20:52 PM",
+      "metadata": {
+        "destination": "lokoja",
+        "routeCount": 3
+      },
+      "createdAt": "2025-10-05T19:20:52.133Z"
+    },
+    {
+      "id": "traffic_conditions_1759692061694_zq926malf",
+      "rootHash": "0x0237117869f73ac03665adfc835c156ab0b5423bee7d72abf1dbad372aa59b1a",
+      "txHash": {
+        "txHash": "0x097e8e8defbd9955d7672ed5c0d088539417dfd736a9ac970699c2025a480c4c",
+        "rootHash": "0x0237117869f73ac03665adfc835c156ab0b5423bee7d72abf1dbad372aa59b1a"
+      },
+      "timestamp": "2025-10-05T19:21:01.693Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 8:21:01 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T19:21:01.694Z"
+    },
+    {
+      "id": "traffic_conditions_1759692487387_ghi63ursw",
+      "rootHash": "0x5fa7a1f8149fd861362443f7decc635c5b7870c18d0600e32c6cf5acd6a89ca7",
+      "txHash": {
+        "txHash": "0x25afde107ee5dd9b51b21498e1a0b70c4b0eb1ef12d76517f6292ce95ae34079",
+        "rootHash": "0x5fa7a1f8149fd861362443f7decc635c5b7870c18d0600e32c6cf5acd6a89ca7"
+      },
+      "timestamp": "2025-10-05T19:28:07.387Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 8:28:07 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T19:28:07.387Z"
+    },
+    {
+      "id": "route_data_1759692685094_u6xsn8ht8",
+      "rootHash": "0x5573893a5b2e8afe054cc3e9e377c9856e0983ee72b397b16591f28639693f1d",
+      "txHash": {
+        "txHash": "0x649672ea678d2b8c66c7f1896890d3f77f8d5e311568b9d776d806dff38b95d9",
+        "rootHash": "0x5573893a5b2e8afe054cc3e9e377c9856e0983ee72b397b16591f28639693f1d"
+      },
+      "timestamp": "2025-10-05T19:31:25.094Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/5/2025, 8:31:25 PM",
+      "metadata": {
+        "destination": "Kogi",
+        "routeCount": 3
+      },
+      "createdAt": "2025-10-05T19:31:25.094Z"
+    },
+    {
+      "id": "traffic_conditions_1759692714560_axrdntvm4",
+      "rootHash": "0xa5189e69bc830d6562b46675dcb99d66c7a5c599720fbbd65cc6007773c30914",
+      "txHash": {
+        "txHash": "0x70cd30f18ae41c18db762eac63f584f6c636a633a86434b2299ebb677f32ce6f",
+        "rootHash": "0xa5189e69bc830d6562b46675dcb99d66c7a5c599720fbbd65cc6007773c30914"
+      },
+      "timestamp": "2025-10-05T19:31:54.560Z",
+      "dataType": "traffic_conditions",
+      "description": "traffic_conditions - 10/5/2025, 8:31:54 PM",
+      "metadata": {
+        "count": 1
+      },
+      "createdAt": "2025-10-05T19:31:54.560Z"
+    }
+  ]
+}

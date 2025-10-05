@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Zap, Clock, AlertTriangle, TrendingUp, Lightbulb, Star, Target } from 'lucide-react';
 import { ZeroGComputeService } from '../services/0gComputeService';
+import { ZeroGStorageService } from '../services/0gStorageService';
 import { useGeolocation } from '../hooks/useGeolocation';
 
 interface AITrafficInsightsProps {
@@ -23,6 +24,8 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
   const [lastAnalysisTime, setLastAnalysisTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
     const analyzeTraffic = async () => {
       // Only analyze if user has searched for a destination and we have route data
       if (!userLocation || !destination || !hasActiveRoute) {
@@ -31,9 +34,11 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
         return;
       }
 
-      console.log('AI analyzing route to:', destination);
-      setIsAnalyzing(true);
-      setError(null);
+      // Debounce - wait 500ms before analyzing
+      timeout = setTimeout(async () => {
+        console.log('AI analyzing route to:', destination);
+        setIsAnalyzing(true);
+        setError(null);
 
       try {
         const currentTime = new Date();
@@ -52,19 +57,39 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
         };
 
         const aiInsights = await ZeroGComputeService.analyzeTrafficConditions(analysisRequest);
+
+        // Display results immediately
         setInsights(aiInsights);
         setLastAnalysisTime(currentTime);
-        
+        setIsAnalyzing(false);
+
+        // Save to 0G Storage in background (don't await)
+        const storageData = {
+          insights: aiInsights,
+          request: analysisRequest,
+          timestamp: currentTime.toISOString()
+        };
+
+        ZeroGStorageService.saveTrafficConditions([storageData])
+          .then(result => {
+            console.log('💾 Saved to 0G Storage:', result.rootHash);
+          })
+          .catch(storageError => {
+            console.error('Failed to save to 0G Storage:', storageError);
+          });
+
       } catch (error) {
         console.error('AI traffic analysis failed:', error);
         setError('AI analysis temporarily unavailable');
-      } finally {
         setIsAnalyzing(false);
       }
+      }, 500);
     };
 
     // Only analyze when user searches for a route (not continuously)
     analyzeTraffic();
+
+    return () => clearTimeout(timeout);
   }, [userLocation, destination, hasActiveRoute]); // Removed trafficData from dependencies
 
 

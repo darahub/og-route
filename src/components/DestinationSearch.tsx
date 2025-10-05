@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, MapPin, Clock, Route, Navigation, AlertTriangle, Zap, ExternalLink, Loader } from 'lucide-react';
 import { RouteService, RouteResult } from '../services/routeService';
 import { NavigationService } from '../services/navigationService';
+import { ZeroGStorageService } from '../services/0gStorageService';
 import { useAuth } from '../contexts/AuthContext';
 
 interface DestinationSearchProps {
@@ -59,11 +60,26 @@ export const DestinationSearch: React.FC<DestinationSearchProps> = ({
           setRoutes(response.routes);
           setShowResults(true);
           console.log('Found routes:', response.routes.length);
-          
+
           // Notify parent component about the routes
           onRoutesFound?.(response.routes);
           onDestinationChange?.(destination.trim());
           onSearchStateChange?.(true);
+
+          // Save to 0G Storage
+          try {
+            const routeData = {
+              origin: userLocation,
+              destination: destination.trim(),
+              routes: response.routes,
+              timestamp: new Date().toISOString()
+            };
+            const result = await ZeroGStorageService.saveRouteData(routeData);
+            console.log('💾 Routes saved to 0G Storage:', result.rootHash);
+          } catch (storageError) {
+            console.error('Failed to save routes to 0G Storage:', storageError);
+            // Don't show error to user, it's a background operation
+          }
         }
       } else {
         console.error('Route calculation failed:', response.message);

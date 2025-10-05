@@ -7,6 +7,7 @@ import { AlternativeRoutes } from './components/AlternativeRoutes';
 import { AITrafficInsights } from './components/AITrafficInsights';
 import { FilterPanel } from './components/FilterPanel';
 import { TrafficAnalytics } from './components/TrafficAnalytics';
+import { StorageViewer } from './components/StorageViewer';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useTrafficData } from './hooks/useTrafficData';
@@ -138,6 +139,9 @@ function AppContent() {
               <TrafficAnalytics />
             </div>
             <div className="animate-slideInRight" style={{ animationDelay: '300ms' }}>
+              <StorageViewer />
+            </div>
+            <div className="animate-slideInRight" style={{ animationDelay: '400ms' }}>
               <FilterPanel />
             </div>
           </div>

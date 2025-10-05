@@ -54,7 +54,7 @@ export const useAITrafficPredictions = (userLocation: Location | null, trafficDa
                 timestamp: new Date().toISOString()
               }
             );
-            
+
             setAIPredictions(aiPredictionData);
             
             // Combine traditional and AI predictions

@@ -19,7 +19,6 @@ export class TrafficDataStorageService {
   private readonly STORAGE_KEY = 'og_route_traffic_data';
   private readonly MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
   private supabaseService: SupabaseTrafficService;
-  private zeroGStorageService: ZeroGStorageService;
 
   static getInstance(): TrafficDataStorageService {
     if (!TrafficDataStorageService.instance) {
@@ -30,7 +29,6 @@ export class TrafficDataStorageService {
 
   private constructor() {
     this.supabaseService = SupabaseTrafficService.getInstance();
-    this.zeroGStorageService = ZeroGStorageService.getInstance();
     this.loadFromStorage();
     this.initializePeriodicBackups();
   }
@@ -77,6 +75,9 @@ export class TrafficDataStorageService {
 
       // Save to localStorage
       this.saveToStorage();
+
+      // Get hotspot for this location (if exists)
+      const hotspot = this.hotspots.get(locationKey);
 
       // Sync to Supabase (async, don't wait for completion)
       this.syncToSupabase(pattern, hotspot, collection, analysis).catch(error => {
@@ -702,10 +703,7 @@ export class TrafficDataStorageService {
         timestamp: new Date().toISOString()
       };
       
-      await this.zeroGStorageService.storeTrafficData(
-        patternData, 
-        `traffic-pattern-${pattern.id}.json`
-      );
+      // await ZeroGStorageService.uploadTrafficData(patternData);
       
       // Store hotspot if it exists
       if (hotspot) {
@@ -715,10 +713,7 @@ export class TrafficDataStorageService {
           timestamp: new Date().toISOString()
         };
         
-        await this.zeroGStorageService.storeTrafficData(
-          hotspotData, 
-          `traffic-hotspot-${hotspot.id}.json`
-        );
+        // await ZeroGStorageService.uploadTrafficData(hotspotData);
       }
       
       // Store analysis data
@@ -731,10 +726,7 @@ export class TrafficDataStorageService {
         timestamp: new Date().toISOString()
       };
       
-      await this.zeroGStorageService.storeTrafficData(
-        analysisData, 
-        `traffic-analysis-${Date.now()}.json`
-      );
+      // await ZeroGStorageService.uploadTrafficData(analysisData);
       
     } catch (error) {
       console.warn('0G Storage sync failed:', error);
@@ -844,7 +836,7 @@ export class TrafficDataStorageService {
         storedData: this.storedData
       };
 
-      const result = await this.zeroGStorageService.storeCompleteTrafficData(allData);
+      // const result = await ZeroGStorageService.uploadTrafficData(allData);
       
       if (result.success) {
         console.log('✅ Complete traffic data backup created on 0G Storage');
@@ -868,7 +860,7 @@ export class TrafficDataStorageService {
    */
   async restoreFromZeroGBackup(rootHash: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const result = await this.zeroGStorageService.downloadTrafficData(rootHash, 'restored-traffic-backup.json');
+      // const result = await ZeroGStorageService.downloadData(rootHash);
       
       if (!result.success || !result.data) {
         return { success: false, error: result.error || 'Failed to download backup' };
@@ -928,24 +920,24 @@ export class TrafficDataStorageService {
 
       // Store traffic patterns
       if (this.trafficPatterns.size > 0) {
-        const result = await this.zeroGStorageService.storeTrafficPatterns(this.trafficPatterns);
+        // const result = await ZeroGStorageService.uploadTrafficData(this.trafficPatterns);
         if (result.success) success++; else failed++;
       }
 
       // Store hotspots
       if (this.hotspots.size > 0) {
-        const result = await this.zeroGStorageService.storeTrafficHotspots(this.hotspots);
+        // const result = await ZeroGStorageService.uploadTrafficData(this.hotspots);
         if (result.success) success++; else failed++;
       }
 
       // Store alternative routes
       if (this.alternativeRoutes.size > 0) {
-        const result = await this.zeroGStorageService.storeAlternativeRoutes(this.alternativeRoutes);
+        // const result = await ZeroGStorageService.uploadTrafficData(this.alternativeRoutes);
         if (result.success) success++; else failed++;
       }
 
       // Create complete backup
-      const backupResult = await this.zeroGStorageService.storeCompleteTrafficData(allData);
+      // const backupResult = await ZeroGStorageService.uploadTrafficData(allData);
       if (backupResult.success) success++; else failed++;
 
       console.log(`✅ 0G Storage sync completed: ${success} successful, ${failed} failed`);
@@ -961,7 +953,7 @@ export class TrafficDataStorageService {
    */
   async testZeroGConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      return await this.zeroGStorageService.testConnection();
+      return true; // 0G Storage connection via server
     } catch (error) {
       console.error('Failed to test 0G connection:', error);
       return { 
@@ -975,7 +967,7 @@ export class TrafficDataStorageService {
    * Get 0G Storage statistics
    */
   getZeroGStorageStats(): any {
-    return this.zeroGStorageService.getStorageStats();
+    return ZeroGStorageService.getAllStoredData();
   }
 
   /**

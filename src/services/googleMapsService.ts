@@ -90,7 +90,7 @@ export class GoogleMapsService {
   }
 
   async loadGoogleMaps(): Promise<void> {
-    if (this.isLoaded && window.google && window.google.maps) {
+    if (this.isLoaded && window.google && window.google.maps && window.google.maps.places) {
       console.log('Google Maps already loaded and verified, skipping initialization');
       return;
     }
@@ -103,7 +103,7 @@ export class GoogleMapsService {
 
     return new Promise((resolve, reject) => {
       // Check if already loaded by another instance
-      if (window.google && window.google.maps) {
+      if (window.google && window.google.maps && window.google.maps.places) {
         this.isLoaded = true;
         console.log('Google Maps API already available in window object');
         resolve();
@@ -117,7 +117,7 @@ export class GoogleMapsService {
         
         // Wait for the existing script to finish loading
         const waitForGoogle = () => {
-          if (window.google && window.google.maps) {
+          if (window.google && window.google.maps && window.google.maps.places) {
             this.isLoaded = true;
             console.log('Google Maps API loaded successfully via existing script');
             resolve();

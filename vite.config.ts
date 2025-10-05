@@ -38,6 +38,7 @@ export default defineConfig({
     'vm': '{}',
     'readline': '{}',
   },
+  envPrefix: 'VITE_',
   resolve: {
     alias: {
       buffer: 'buffer',

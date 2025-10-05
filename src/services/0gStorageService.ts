@@ -5,7 +5,8 @@
 
 import { StorageMetadataService } from './storageMetadata';
 
-const API_URL = 'http://localhost:4000';
+// Use VITE_API_URL if set, otherwise default to relative paths (for production)
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export class ZeroGStorageService {
   /**

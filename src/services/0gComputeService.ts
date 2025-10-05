@@ -166,15 +166,29 @@ export class ZeroGComputeService {
   }
 
   /**
-   * Analyze traffic conditions using 0G Compute Network AI
+   * Analyze traffic conditions using 0G Compute Network AI via API
    */
   static async analyzeTrafficConditions(request: TrafficAnalysisRequest): Promise<AITrafficInsight> {
     try {
       const prompt = this.buildTrafficAnalysisPrompt(request);
-      const response = await this.sendAIRequest(prompt);
+
+      // Use API endpoint instead of direct 0G Compute call to avoid Mixed Content issues
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
+      const data = await response.json();
+      const answerText = data.answer;
 
       // Parse AI response
-      const parsed = this.extractJson(response);
+      const parsed = this.extractJson(answerText);
       const aiAnalysis = JSON.parse(parsed);
       const analysis = this.validateAndFormatResponse(aiAnalysis);
 

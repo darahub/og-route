@@ -6,7 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Download, FileText, Package, RefreshCw } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
+// Use VITE_API_URL if set, otherwise default to relative paths (for production)
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const StorageViewer: React.FC = () => {
   const [storageData, setStorageData] = useState<any>(null);
@@ -34,7 +35,7 @@ export const StorageViewer: React.FC = () => {
 
   const handleDownload = async (rootHash: string) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/storage/download/${rootHash}`);
+      const response = await fetch(`${API_URL}/api/storage/download/${rootHash}`);
       if (!response.ok) throw new Error('Download failed');
 
       const data = await response.json();

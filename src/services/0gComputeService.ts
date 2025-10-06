@@ -43,14 +43,16 @@ export class ZeroGComputeService {
         return;
       }
 
+      console.log('🔵 [0G Compute] Connecting to 0G Network provider...');
       const provider = new ethers.JsonRpcProvider("https://evmrpc-testnet.0g.ai");
       const wallet = new ethers.Wallet(privateKey, provider);
+      console.log('🔵 [0G Compute] Provider connected, initializing 0G Compute broker...');
 
       const { createZGComputeNetworkBroker } = await import("@0glabs/0g-serving-broker");
       this.broker = await createZGComputeNetworkBroker(wallet);
 
       this.isInitialized = true;
-      console.log('✅ 0G Compute Network broker initialized');
+      console.log('✅ [0G Compute] 0G Compute Network broker initialized and ready');
     } catch (error) {
       console.error('Failed to initialize 0G broker:', error);
       this.isInitialized = true;
@@ -110,6 +112,7 @@ export class ZeroGComputeService {
 
     try {
       // 1. List services to get provider address
+      console.log('🔵 [0G Compute] Discovering available 0G Compute providers...');
       const services = await this.broker.inference.listService();
       if (!services || services.length === 0) {
         throw new Error('No services available');
@@ -120,18 +123,22 @@ export class ZeroGComputeService {
         throw new Error('Provider address not found');
       }
 
-      console.log('Using provider:', providerAddress);
+      console.log('✅ [0G Compute] Provider selected:', providerAddress);
 
       // 2. Get service metadata
+      console.log('🔵 [0G Compute] Retrieving provider metadata and endpoint...');
       const { endpoint, model } = await this.broker.inference.getServiceMetadata(providerAddress);
+      console.log('✅ [0G Compute] Provider metadata retrieved - Model:', model);
 
       // 3. Prepare messages
       const messages = [{ role: "user", content: prompt }];
 
       // 4. Generate request headers
+      console.log('🔵 [0G Compute] Generating authentication headers for 0G provider...');
       const headers = await this.broker.inference.getRequestHeaders(providerAddress, messages);
 
       // 5. Send request
+      console.log('🔵 [0G Compute] Sending AI request to 0G Compute provider...');
       const response = await fetch(`${endpoint}/chat/completions`, {
         method: "POST",
         headers: {
@@ -146,6 +153,7 @@ export class ZeroGComputeService {
         throw new Error(`Request failed: ${response.status} - ${errorText}`);
       }
 
+      console.log('🔵 [0G Compute] Processing AI response from 0G provider...');
       const data = await response.json();
       const answer = data.choices[0].message.content;
 
@@ -156,7 +164,7 @@ export class ZeroGComputeService {
         // Silently skip verification - this is expected behavior
       }
 
-      console.log('✅ AI response received');
+      console.log('✅ [0G Compute] AI response successfully received from 0G Compute Network');
       return answer;
 
     } catch (error) {
@@ -170,10 +178,12 @@ export class ZeroGComputeService {
    */
   static async analyzeTrafficConditions(request: TrafficAnalysisRequest): Promise<AITrafficInsight> {
     try {
+      console.log('🔵 [0G Compute] Initializing traffic analysis with 0G Compute Network...');
       const prompt = this.buildTrafficAnalysisPrompt(request);
 
       // Use API endpoint instead of direct 0G Compute call to avoid Mixed Content issues
       const API_URL = import.meta.env.VITE_API_URL || '';
+      console.log('🔵 [0G Compute] Connecting to 0G provider via secure API endpoint...');
       const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,8 +194,10 @@ export class ZeroGComputeService {
         throw new Error('API request failed');
       }
 
+      console.log('🔵 [0G Compute] Querying 0G Compute provider for AI traffic insights...');
       const data = await response.json();
       const answerText = data.answer;
+      console.log('✅ [0G Compute] AI analysis received from 0G Compute Network');
 
       // Parse AI response
       const parsed = this.extractJson(answerText);

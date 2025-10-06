@@ -13,6 +13,7 @@ export class ZeroGStorageService {
    * Upload traffic data to 0G Storage
    */
   static async uploadTrafficData(data: any): Promise<{ rootHash: string; txHash: string; timestamp: string }> {
+    console.log('🔵 [0G Storage] Preparing data for 0G decentralized storage...');
     const response = await fetch(`${API_URL}/api/storage/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -24,8 +25,11 @@ export class ZeroGStorageService {
       throw new Error(error.error || 'Storage upload failed');
     }
 
+    console.log('🔵 [0G Storage] Uploading to 0G Storage Network...');
     const result = await response.json();
-    console.log('✅ Uploaded to 0G Storage:', result);
+    console.log('✅ [0G Storage] Data successfully uploaded to 0G Storage Network');
+    console.log('📦 [0G Storage] Root Hash:', result.rootHash);
+    console.log('📝 [0G Storage] Transaction Hash:', result.txHash);
     return result;
   }
 
@@ -33,6 +37,7 @@ export class ZeroGStorageService {
    * Save current traffic conditions
    */
   static async saveTrafficConditions(trafficData: any[]): Promise<{ rootHash: string; txHash: string; timestamp: string }> {
+    console.log(`🔵 [0G Storage] Saving ${trafficData.length} traffic data points to 0G Storage...`);
     const data = {
       type: 'traffic_conditions',
       timestamp: new Date().toISOString(),
@@ -52,6 +57,7 @@ export class ZeroGStorageService {
       metadata: { count: trafficData.length }
     });
 
+    console.log('✅ [0G Storage] Traffic conditions metadata saved locally for retrieval');
     return result;
   }
 

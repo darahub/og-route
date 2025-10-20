@@ -343,10 +343,10 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
                     onClick={watchStatus}
                     disabled={isWatchingStatus}
                   >
-                    {isWatchingStatus ? 'Watching...' : 'Watch status'}
+                    {isWatchingStatus ? 'Training...' : 'Training'}
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-foreground/60 break-all">Current model: {currentServingModel || 'Unknown'}</p>
+                <p className="mt-2 text-xs text-foreground/60 break-all">Training model: {currentServingModel || modelName || DEFAULT_MODEL}</p>
                 {pollError && (
                   <p className="text-xs text-danger mt-1">{pollError}</p>
                 )}

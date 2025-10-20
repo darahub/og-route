@@ -1,0 +1,18 @@
+Usage: 0g-compute-cli upload [options]
+
+Upload a dataset for fine-tuning
+
+Options:
+  --data-path <path>          Path to the dataset
+  --key <key>                 Wallet private key, if not provided, ensure the
+                              default key is set in the environment (default:
+                              "0x2fe8c13fcebc3c4702a29238323540bdabccf2ef29976fedbcb828e4f4bd5167")
+  --rpc <url>                 0G Chain RPC endpoint
+  --ledger-ca <address>       Account (ledger) contract address, use default
+                              address if not provided
+  --fine-tuning-ca <address>  Fine Tuning contract address, use default address
+                              if not provided
+  --gas-price <price>         Gas price for transactions
+  --max-gas-price <price>     Max gas price for transactions
+  --step <step>               Step for gas price adjustment
+  -h, --help                  display help for command

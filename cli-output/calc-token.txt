@@ -1,0 +1,15 @@
+File /Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/binary/token_counter does not exist.
+Failed to delete /Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/binary/token_counter: Error: ENOENT: no such file or directory, unlink '/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/binary/token_counter'
+    at async Object.unlink (node:internal/fs/promises:1064:10)
+    at async calculateTokenSizeViaExe (/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/cli.commonjs/sdk/fine-tuning/token/token.js:98:13)
+    at async ModelProcessor.calculateToken (/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/cli.commonjs/sdk/fine-tuning/broker/model.js:53:24)
+    at async FineTuningBroker.calculateToken (/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/cli.commonjs/sdk/fine-tuning/broker/broker.js:115:13)
+    at async /Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/cli.commonjs/cli/fine-tuning.js:125:13
+    at async withFineTuningBroker (/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/cli.commonjs/cli/util.js:30:13) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'unlink',
+  path: '/Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/binary/token_counter'
+}
+Downloading /Users/damiafo/Library/pnpm/global/5/.pnpm/@0glabs+0g-serving-broker@0.5.4_@types+circomlibjs@0.1.6_@types+crypto-js@4.2.2_circomlibjs@0_diqgjywdgkudxy4lgn5dgawb34/node_modules/@0glabs/0g-serving-broker/binary/token_counter
+✗ Operation failed: spawn Unknown system error -8

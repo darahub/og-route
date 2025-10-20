@@ -181,6 +181,54 @@
         "count": 1
       },
       "createdAt": "2025-10-05T19:31:54.560Z"
+    },
+    {
+      "id": "route_data_1760886801785_sx9mpt7nq",
+      "rootHash": "0x827ad51675b4b563ebfe2f1c081a6089280a1254d8d255e7898db8cd3c7aeaed",
+      "txHash": {
+        "txHash": "0x086d08a503f3610aa201f121033f2be5499702da5ce5aed1cc86e2f944498cbb",
+        "rootHash": "0x827ad51675b4b563ebfe2f1c081a6089280a1254d8d255e7898db8cd3c7aeaed"
+      },
+      "timestamp": "2025-10-19T15:13:21.757Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/19/2025, 4:13:21 PM",
+      "metadata": {
+        "destination": "ilesha",
+        "routeCount": 2
+      },
+      "createdAt": "2025-10-19T15:13:21.785Z"
+    },
+    {
+      "id": "route_data_1760887285375_ovqunsu5p",
+      "rootHash": "0x42b679023215ffcf2e05782fe48739df6082c382cac437fff6ca985018ae0d02",
+      "txHash": {
+        "txHash": "0x75f107d5709724108b8d246a72bf4cc5f68e12c69442bebabc93d237b2013d00",
+        "rootHash": "0x42b679023215ffcf2e05782fe48739df6082c382cac437fff6ca985018ae0d02"
+      },
+      "timestamp": "2025-10-19T15:21:25.374Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/19/2025, 4:21:25 PM",
+      "metadata": {
+        "destination": "abakaliki",
+        "routeCount": 3
+      },
+      "createdAt": "2025-10-19T15:21:25.375Z"
+    },
+    {
+      "id": "route_data_1760891375390_s183l2aur",
+      "rootHash": "0x5009f080cead818e8eb64af8ce26769d0f1005d1eb0f4a2bd4401c105b308755",
+      "txHash": {
+        "txHash": "0x95de0fc324b1ca35f582f993e4abff6af251f63407e777f4e2ac5631b61dc0a8",
+        "rootHash": "0x5009f080cead818e8eb64af8ce26769d0f1005d1eb0f4a2bd4401c105b308755"
+      },
+      "timestamp": "2025-10-19T16:29:35.389Z",
+      "dataType": "route_data",
+      "description": "route_data - 10/19/2025, 5:29:35 PM",
+      "metadata": {
+        "destination": "abuja",
+        "routeCount": 3
+      },
+      "createdAt": "2025-10-19T16:29:35.390Z"
     }
   ]
 }

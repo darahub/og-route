@@ -63,20 +63,8 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
         setLastAnalysisTime(currentTime);
         setIsAnalyzing(false);
 
-        // Save to 0G Storage in background (don't await)
-        const storageData = {
-          insights: aiInsights,
-          request: analysisRequest,
-          timestamp: currentTime.toISOString()
-        };
-
-        ZeroGStorageService.saveTrafficConditions([storageData])
-          .then(result => {
-            console.log('💾 Saved to 0G Storage:', result.rootHash);
-          })
-          .catch(storageError => {
-            console.error('Failed to save to 0G Storage:', storageError);
-          });
+        // Note: AI insights are now backed up periodically (every 6 hours) instead of immediately
+        // This reduces blockchain transaction costs and prevents nonce conflicts
 
       } catch (error) {
         console.error('AI traffic analysis failed:', error);

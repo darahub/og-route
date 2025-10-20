@@ -1,0 +1,4 @@
+- NO Over-engineering
+- This should be approached as a production ready app that will be pitched to a billion dollar Venture capitalist
+- NO MOCK or ASSUMED DATA, it should use real data and if not available, SPECIFY TO USER
+- No Unnecessary comments

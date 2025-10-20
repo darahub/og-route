@@ -25,10 +25,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
     const checkAuth = async () => {
       try {
-        // For now, we'll use localStorage as a simple auth store
         const storedUser = localStorage.getItem('trafficiq_user');
         if (storedUser) {
           setUser(JSON.parse(storedUser));
@@ -46,15 +44,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // Mock authentication - in a real app, this would call your auth service
-      const mockUser: User = {
+      const user: User = {
         id: 'user_' + Date.now(),
         email,
         name: email.split('@')[0]
       };
-      
-      localStorage.setItem('trafficiq_user', JSON.stringify(mockUser));
-      setUser(mockUser);
+
+      localStorage.setItem('trafficiq_user', JSON.stringify(user));
+      setUser(user);
     } catch (error) {
       console.error('Sign in failed:', error);
       throw error;
@@ -66,15 +63,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = async (email: string, password: string, name?: string) => {
     try {
       setLoading(true);
-      // Mock registration - in a real app, this would call your auth service
-      const mockUser: User = {
+      const user: User = {
         id: 'user_' + Date.now(),
         email,
         name: name || email.split('@')[0]
       };
-      
-      localStorage.setItem('trafficiq_user', JSON.stringify(mockUser));
-      setUser(mockUser);
+
+      localStorage.setItem('trafficiq_user', JSON.stringify(user));
+      setUser(user);
     } catch (error) {
       console.error('Sign up failed:', error);
       throw error;

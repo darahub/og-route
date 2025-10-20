@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
 import { DestinationSearch } from './components/DestinationSearch';
-import { TrafficList } from './components/TrafficList';
+// Removed TrafficList import
 import { PredictionChart } from './components/PredictionChart';
 import { AlternativeRoutes } from './components/AlternativeRoutes';
 import { AITrafficInsights } from './components/AITrafficInsights';
-import { FilterPanel } from './components/FilterPanel';
-import { TrafficAnalytics } from './components/TrafficAnalytics';
-import { StorageViewer } from './components/StorageViewer';
+
+import { InsightsPanel } from './components/InsightsPanel';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useTrafficData } from './hooks/useTrafficData';
@@ -123,26 +122,17 @@ function AppContent() {
 
         {/* Main Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-          {/* Left Column - Predictions */}
-          <div className="lg:col-span-8 space-y-4 sm:space-y-6">
+          {/* Left: Prediction chart */}
+          <div className="lg:col-span-8">
             <div className="animate-slideInLeft">
               <PredictionChart />
             </div>
           </div>
 
-          {/* Right Column - Traffic Conditions and Filters */}
+          {/* Right: Condensed insights panel only */}
           <div className="lg:col-span-4 space-y-4 sm:space-y-6">
-            <div className="animate-slideInRight">
-              <TrafficList trafficData={trafficData} />
-            </div>
-            <div className="animate-slideInRight" style={{ animationDelay: '200ms' }}>
-              <TrafficAnalytics />
-            </div>
-            <div className="animate-slideInRight" style={{ animationDelay: '300ms' }}>
-              <StorageViewer />
-            </div>
-            <div className="animate-slideInRight" style={{ animationDelay: '400ms' }}>
-              <FilterPanel />
+            <div className="animate-slideInRight" style={{ animationDelay: '150ms' }}>
+              <InsightsPanel />
             </div>
           </div>
         </div>

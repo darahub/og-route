@@ -46,10 +46,9 @@ export const useTrafficData = (userLocation: Location | null) => {
       console.log('Converted traffic data:', convertedData);
       setTrafficData(convertedData);
       setLastUpdated(new Date());
-      
-      if (convertedData.length === 0) {
-        setError('No traffic data available for your area. This could mean light traffic conditions.');
-      }
+
+      // Empty traffic data is valid - it means light traffic conditions
+      // Don't show error for empty results
     } catch (error) {
       console.error('Failed to fetch traffic data:', error);
       setError(error instanceof Error ? error.message : 'Failed to load traffic data. Please check your internet connection.');

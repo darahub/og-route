@@ -1,0 +1,12 @@
+Usage: 0g-compute-cli calculate-token [options]
+
+Download token-counter
+
+Options:
+  --key <key>            Wallet private key, if not provided, ensure the default
+                         key is set in the environment (default:
+                         "0x2fe8c13fcebc3c4702a29238323540bdabccf2ef29976fedbcb828e4f4bd5167")
+  --model <name>         Pre-trained model name to use
+  --dataset-path <path>  Path to the zip file containing the fine-tuning dataset
+  --provider <address>   Provider address for the task
+  -h, --help             display help for command

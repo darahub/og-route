@@ -13,24 +13,21 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate refresh delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsRefreshing(false);
-    
-    // Trigger filter change to refresh data
+
     if (onFilterChange) {
       onFilterChange({ timeRange, severity, radius, refresh: Date.now() });
     }
   };
 
   const exportData = () => {
-    // Simulate data export
     const data = {
       timestamp: new Date().toISOString(),
       filters: { timeRange, severity, radius },
       message: 'Traffic prediction data exported successfully'
     };
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

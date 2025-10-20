@@ -230,24 +230,7 @@ export const useGeolocation = () => {
         });
       }
     } else {
-      // No saved location, request new one
       requestLocation();
-      
-      // Set a fallback location for demo purposes if geolocation fails
-      setTimeout(() => {
-        if (!state.location && !state.error) {
-          console.log('Setting fallback location for demo');
-          const fallbackLocation = {
-            lat: 6.5244,
-            lng: 3.3792,
-            address: 'Lagos, Nigeria'
-          };
-          setState({
-            location: fallbackLocation,
-            error: null,
-          });
-        }
-      }, 5000); // Wait 5 seconds before setting fallback
     }
   }, [loadSavedLocation, requestLocation, reverseGeocode, saveLocation]);
 

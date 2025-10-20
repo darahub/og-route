@@ -45,66 +45,48 @@ export class TrafficService {
   ): Promise<TrafficCondition[]> {
     try {
       console.log('Fetching traffic conditions for location:', location);
-      
-      // Check if Google Maps API key is available
+
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
       if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-        console.log('Google Maps API key not configured, using simulation data');
-        return await this.generateLocationAwareSimulation(location);
+        throw new Error('Google Maps API key not configured');
       }
-      
-      // Try to load Google Maps and get real data
-      try {
-        console.log('Initializing Google Maps service...');
-        await this.googleMapsService.loadGoogleMaps();
-        
-        // Verify google object is available
-        if (!window.google || !window.google.maps) {
-          console.error('Google Maps SDK not available - using simulation data');
-          return await this.generateLocationAwareSimulation(location);
-        }
-        console.log('Google Maps SDK initialized successfully');
 
-        // Fetch real traffic data from Google Maps
-        console.log('Fetching fresh REAL traffic data from Google Maps...');
-        const realConditions = await this.fetchRealTrafficData(location, radius);
-        
-        if (realConditions.length > 0) {
-          console.log(`Found ${realConditions.length} REAL traffic conditions from Google Maps`);
-          
-          // Save to Supabase for caching (don't block on this)
-          this.saveConditionsToCache(realConditions).catch(error => 
-            console.warn('Failed to cache traffic conditions:', error)
-          );
-          
-          return realConditions;
-        }
+      console.log('Initializing Google Maps service...');
+      await this.googleMapsService.loadGoogleMaps();
 
-        // If no real traffic data found, generate location-aware simulation
-        console.log('No real traffic data available from Google Maps API. Generating location-aware simulation...');
-        return await this.generateLocationAwareSimulation(location);
-
-      } catch (googleMapsError) {
-        console.error('Google Maps service failed:', googleMapsError);
-        console.log('Falling back to simulation data');
-        return await this.generateLocationAwareSimulation(location);
+      if (!window.google || !window.google.maps) {
+        throw new Error('Google Maps SDK not available');
       }
+      console.log('Google Maps SDK initialized successfully');
+
+      console.log('Fetching REAL traffic data from Google Maps...');
+      const realConditions = await this.fetchRealTrafficData(location, radius);
+
+      if (realConditions.length > 0) {
+        console.log(`Found ${realConditions.length} REAL traffic conditions from Google Maps`);
+
+        this.saveConditionsToCache(realConditions).catch(error =>
+          console.warn('Failed to cache traffic conditions:', error)
+        );
+
+        return realConditions;
+      }
+
+      console.log('No real traffic data available from Google Maps API');
+      return [];
 
     } catch (error) {
       console.error('Failed to fetch traffic conditions:', error);
-      // Return basic fallback data instead of empty array
-      return this.getBasicFallbackData(location);
+      return [];
     }
   }
 
   static async getTrafficPredictions(location: { lat: number; lng: number }): Promise<TrafficPrediction> {
     try {
-      console.log('Generating real traffic predictions for location:', location);
-      
-      // Get current traffic conditions
+      console.log('Generating traffic predictions for location:', location);
+
       const currentConditions = await this.getCurrentTrafficConditions(location, 5);
-      
-      // Generate predictions based on real data
+
       return await this.generateRealTimePredictions(location, currentConditions);
     } catch (error) {
       console.error('Failed to fetch traffic predictions:', error);
@@ -359,57 +341,54 @@ export class TrafficService {
   ): Promise<TrafficPrediction> {
     const currentHour = new Date().getHours();
     const predictions = [];
-    
-    // Generate predictions for next 12 hours based on real current conditions
+
     for (let i = 0; i < 12; i++) {
       const hour = (currentHour + i) % 24;
       const timeString = this.formatHour(hour);
-      
-      // Base prediction on current real traffic conditions
+
       const baseCongestion = this.calculateCurrentCongestionLevel(currentConditions);
       const hourlyFactor = this.getHourlyTrafficFactor(hour);
       const congestionLevel = Math.round(baseCongestion * hourlyFactor);
-      
+
       predictions.push({
         time: timeString,
         congestionLevel: Math.min(100, Math.max(0, congestionLevel)),
-        confidence: Math.max(60, 95 - (i * 3)) // Confidence decreases over time
+        confidence: Math.max(60, 95 - (i * 3))
       });
     }
 
     return {
       timestamp: new Date(),
       predictions,
-      accuracy: 85 + Math.random() * 10, // Real data has good accuracy
+      accuracy: 85 + Math.random() * 10,
       factors: {
         weather: 15,
         events: 10,
         historical: 25,
-        realTime: 50 // Heavy weight on real-time data
+        realTime: 50
       }
     };
   }
 
   private static calculateCurrentCongestionLevel(conditions: TrafficCondition[]): number {
-    if (conditions.length === 0) return 20; // Low baseline if no traffic
-    
+    if (conditions.length === 0) return 20;
+
     const avgSeverity = conditions.reduce((sum, condition) => {
       const severityValue = { low: 25, moderate: 50, high: 75, severe: 90 }[condition.severity];
       return sum + severityValue;
     }, 0) / conditions.length;
-    
+
     return Math.round(avgSeverity);
   }
 
   private static getHourlyTrafficFactor(hour: number): number {
-    // Real traffic patterns based on hour of day
     const trafficPatterns: { [key: number]: number } = {
       0: 0.2, 1: 0.15, 2: 0.1, 3: 0.1, 4: 0.15, 5: 0.3,
       6: 0.6, 7: 0.9, 8: 1.2, 9: 0.8, 10: 0.6, 11: 0.7,
       12: 0.8, 13: 0.7, 14: 0.6, 15: 0.7, 16: 0.9, 17: 1.3,
       18: 1.1, 19: 0.8, 20: 0.6, 21: 0.5, 22: 0.4, 23: 0.3
     };
-    
+
     return trafficPatterns[hour] || 0.5;
   }
 
@@ -437,7 +416,6 @@ export class TrafficService {
     location: { lat: number; lng: number },
     callback: (conditions: TrafficCondition[]) => void
   ) {
-    // Set up real-time updates every 5 minutes
     const updateInterval = setInterval(async () => {
       try {
         const conditions = await this.getCurrentTrafficConditions(location);
@@ -445,7 +423,7 @@ export class TrafficService {
       } catch (error) {
         console.error('Failed to update traffic conditions:', error);
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(updateInterval);
   }
@@ -473,132 +451,4 @@ export class TrafficService {
     }
   }
 
-  private static async generateLocationAwareSimulation(location: { lat: number; lng: number }): Promise<TrafficCondition[]> {
-    console.log('Generating location-aware traffic simulation for:', location);
-    
-    try {
-      // Try to get location name, but don't fail if Google Maps is not available
-      let cityName = 'Your Area';
-      try {
-        const mainLocationName = await this.getReverseGeocodedAddress(location.lat, location.lng);
-        cityName = mainLocationName ? mainLocationName.split(',')[0] : 'Your Area';
-      } catch (geocodeError) {
-        console.log('Reverse geocoding failed, using fallback location names');
-      }
-      
-      const currentHour = new Date().getHours();
-      const conditions: TrafficCondition[] = [];
-      
-      // Generate 3-5 realistic traffic conditions based on time of day
-      const numConditions = Math.floor(Math.random() * 3) + 3;
-      
-      // Common location names for simulation
-      const locationNames = [
-        `${cityName} Downtown`,
-        `${cityName} Shopping District`,
-        `${cityName} Business Center`,
-        `${cityName} Residential Area`,
-        `${cityName} Industrial Zone`,
-        `${cityName} University District`,
-        `${cityName} Hospital Area`,
-        `${cityName} Airport Road`
-      ];
-      
-      for (let i = 0; i < numConditions; i++) {
-        // Generate points around the user location
-        const angle = (i / numConditions) * 2 * Math.PI;
-        const distance = 0.01 * (0.5 + Math.random() * 0.5); // 0.5-1km radius
-        
-        const conditionLocation = {
-          lat: location.lat + Math.cos(angle) * distance,
-          lng: location.lng + Math.sin(angle) * distance
-        };
-        
-        // Use predefined location names instead of trying to geocode
-        const locationName = locationNames[i % locationNames.length];
-        
-        // Determine realistic severity based on time of day
-        let severity: 'low' | 'moderate' | 'high' | 'severe';
-        let speed: number;
-        let cause: string;
-        
-        if (currentHour >= 7 && currentHour <= 9) {
-          // Morning rush hour
-          severity = Math.random() > 0.5 ? 'high' : 'moderate';
-          speed = Math.floor(Math.random() * 20) + 15; // 15-35 mph
-          cause = 'Morning rush hour traffic';
-        } else if (currentHour >= 17 && currentHour <= 19) {
-          // Evening rush hour
-          severity = Math.random() > 0.3 ? 'high' : 'severe';
-          speed = Math.floor(Math.random() * 15) + 10; // 10-25 mph
-          cause = 'Evening rush hour congestion';
-        } else if (currentHour >= 22 || currentHour <= 5) {
-          // Night time
-          severity = 'low';
-          speed = Math.floor(Math.random() * 20) + 45; // 45-65 mph
-          cause = 'Light traffic';
-        } else {
-          // Regular hours
-          severity = Math.random() > 0.7 ? 'moderate' : 'low';
-          speed = Math.floor(Math.random() * 25) + 30; // 30-55 mph
-          cause = 'Normal traffic flow';
-        }
-        
-        const duration = Math.floor(Math.random() * 20) + 10; // 10-30 minutes
-        
-        conditions.push({
-          id: `simulation-${Date.now()}-${i}`,
-          location: {
-            lat: conditionLocation.lat,
-            lng: conditionLocation.lng,
-            address: locationName
-          },
-          severity,
-          speed,
-          duration,
-          confidence: 70, // Lower confidence for simulated data
-          timestamp: new Date(),
-          predictedDuration: duration + Math.floor(Math.random() * 5),
-          affectedRoutes: [`Routes near ${cityName}`, `Local roads`],
-          cause,
-          description: `⚠️ Simulated: ${severity.charAt(0).toUpperCase() + severity.slice(1)} conditions at ${locationName} - ${cause}`
-        });
-      }
-      
-      console.log(`Generated ${conditions.length} location-aware traffic simulations`);
-      return conditions;
-      
-    } catch (error) {
-      console.error('Failed to generate location-aware simulation:', error);
-      // Return basic fallback data if everything fails
-      return this.getBasicFallbackData(location);
-    }
-  }
-
-  private static getBasicFallbackData(location: { lat: number; lng: number }): TrafficCondition[] {
-    console.log('Generating basic fallback traffic data');
-    
-    const currentHour = new Date().getHours();
-    const severity = currentHour >= 7 && currentHour <= 19 ? 'moderate' : 'low';
-    const speed = currentHour >= 7 && currentHour <= 19 ? 35 : 55;
-    const duration = currentHour >= 7 && currentHour <= 19 ? 20 : 10;
-    
-    return [{
-      id: `fallback-${Date.now()}`,
-      location: {
-        lat: location.lat,
-        lng: location.lng,
-        address: 'Your Current Location'
-      },
-      severity,
-      speed,
-      duration,
-      confidence: 50, // Very low confidence for fallback data
-      timestamp: new Date(),
-      predictedDuration: duration + 5,
-      affectedRoutes: ['Local roads'],
-      cause: 'General traffic conditions',
-      description: `⚠️ Demo: ${severity.charAt(0).toUpperCase() + severity.slice(1)} traffic conditions in your area`
-    }];
-  }
 }

@@ -42,9 +42,7 @@ export const TrafficMap: React.FC<TrafficMapProps> = ({ trafficData, userLocatio
         </div>
       </div>
 
-      {/* Mock Map Container */}
       <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg h-96 overflow-hidden">
-        {/* Grid overlay to simulate map */}
         <div className="absolute inset-0 opacity-20">
           <div className="grid grid-cols-10 grid-rows-10 h-full w-full">
             {Array.from({ length: 100 }).map((_, i) => (
@@ -53,7 +51,6 @@ export const TrafficMap: React.FC<TrafficMapProps> = ({ trafficData, userLocatio
           </div>
         </div>
 
-        {/* User Location */}
         {userLocation && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div className="flex flex-col items-center">
@@ -65,7 +62,6 @@ export const TrafficMap: React.FC<TrafficMapProps> = ({ trafficData, userLocatio
           </div>
         )}
 
-        {/* Traffic Hotspots */}
         {trafficData.slice(0, 8).map((traffic, index) => (
           <div
             key={traffic.id}
@@ -79,8 +75,7 @@ export const TrafficMap: React.FC<TrafficMapProps> = ({ trafficData, userLocatio
               <div className={`w-3 h-3 ${getSeverityColor(traffic.severity)} rounded-full shadow-lg`}>
                 <div className={`absolute inset-0 ${getSeverityColor(traffic.severity)} rounded-full animate-ping opacity-75`}></div>
               </div>
-              
-              {/* Tooltip */}
+
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                 <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-xl">
                   <div className="font-medium">{getSeverityLabel(traffic.severity)}</div>
@@ -94,7 +89,6 @@ export const TrafficMap: React.FC<TrafficMapProps> = ({ trafficData, userLocatio
         ))}
       </div>
 
-      {/* Legend */}
       <div className="mt-4 flex flex-wrap gap-4">
         {(['severe', 'high', 'moderate', 'low'] as const).map((severity) => (
           <div key={severity} className="flex items-center space-x-2">

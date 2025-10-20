@@ -1,0 +1,29 @@
+{
+  "model": "distilbert-base-uncased",
+  "task_type": "sequence_classification",
+  "num_labels": 3,
+  "labels": ["heavy", "moderate", "light"],
+  "tokenizer_name": "distilbert-base-uncased",
+  "hyperparameters": {
+    "learning_rate": 2e-5,
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 16,
+    "per_device_eval_batch_size": 16,
+    "weight_decay": 0.01,
+    "warmup_steps": 500,
+    "max_seq_length": 256,
+    "seed": 42
+  },
+  "data": {
+    "train_file": "train.jsonl",
+    "validation_file": "validation.jsonl",
+    "text_field": "text",
+    "label_field": "label"
+  },
+  "output": {
+    "metrics": ["accuracy", "f1"],
+    "save_best_model": true,
+    "save_every_n_steps": 100
+  },
+  "notes": "This is a minimal fallback configuration. Provider-specific schema may vary."
+}

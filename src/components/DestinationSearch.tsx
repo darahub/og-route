@@ -66,20 +66,8 @@ export const DestinationSearch: React.FC<DestinationSearchProps> = ({
           onDestinationChange?.(destination.trim());
           onSearchStateChange?.(true);
 
-          // Save to 0G Storage
-          try {
-            const routeData = {
-              origin: userLocation,
-              destination: destination.trim(),
-              routes: response.routes,
-              timestamp: new Date().toISOString()
-            };
-            const result = await ZeroGStorageService.saveRouteData(routeData);
-            console.log('💾 Routes saved to 0G Storage:', result.rootHash);
-          } catch (storageError) {
-            console.error('Failed to save routes to 0G Storage:', storageError);
-            // Don't show error to user, it's a background operation
-          }
+          // Note: Route data is now backed up periodically (every 6 hours) instead of immediately
+          // This reduces blockchain transaction costs and prevents nonce conflicts
         }
       } else {
         console.error('Route calculation failed:', response.message);

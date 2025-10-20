@@ -5,8 +5,8 @@
 
 import { StorageMetadataService } from './storageMetadata';
 
-// Use VITE_API_URL if set, otherwise default to relative paths (for production)
-const API_URL = import.meta.env.VITE_API_URL || '';
+// Use VITE_API_URL if set; in dev default to localhost:4000; in prod use relative
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000' : '');
 
 export class ZeroGStorageService {
   /**
@@ -14,23 +14,49 @@ export class ZeroGStorageService {
    */
   static async uploadTrafficData(data: any): Promise<{ rootHash: string; txHash: string; timestamp: string }> {
     console.log('🔵 [0G Storage] Preparing data for 0G decentralized storage...');
-    const response = await fetch(`${API_URL}/api/storage/save`, {
+    console.log('📦 [0G Storage] Data to be saved:', JSON.stringify({ data }));
+    const endpoint = `${API_URL}/api/storage/save`;
+    console.log('🔵 [0G Storage] Endpoint:', endpoint);
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data })
     });
 
+    // Read body as text first to avoid JSON parse crashes on empty/non-JSON bodies
+    const contentType = response.headers.get('content-type') || '';
+    let bodyText: string = '';
+    try {
+      bodyText = await response.text();
+    } catch (e) {
+      bodyText = '';
+    }
+
+    let parsed: any = null;
+    if (bodyText) {
+      if (contentType.includes('application/json')) {
+        try { parsed = JSON.parse(bodyText); } catch {}
+      } else if (bodyText.trim().startsWith('{')) {
+        try { parsed = JSON.parse(bodyText); } catch {}
+      }
+    }
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Storage upload failed');
+      const statusInfo = `status=${response.status}`;
+      const errMsg = (parsed && parsed.error) ? parsed.error : (bodyText || `Storage upload failed (${statusInfo})`);
+      throw new Error(errMsg);
+    }
+
+    if (!parsed) {
+      throw new Error('Empty or non-JSON response from storage endpoint');
     }
 
     console.log('🔵 [0G Storage] Uploading to 0G Storage Network...');
-    const result = await response.json();
     console.log('✅ [0G Storage] Data successfully uploaded to 0G Storage Network');
-    console.log('📦 [0G Storage] Root Hash:', result.rootHash);
-    console.log('📝 [0G Storage] Transaction Hash:', result.txHash);
-    return result;
+    console.log('📦 [0G Storage] Root Hash:', parsed.rootHash);
+    console.log('📝 [0G Storage] Transaction Hash:', parsed.txHash);
+    return parsed;
   }
 
   /**

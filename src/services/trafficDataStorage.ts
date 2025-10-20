@@ -687,50 +687,17 @@ export class TrafficDataStorageService {
   }
 
   /**
-   * Sync data to 0G Storage
+   * Sync data to 0G Storage - DISABLED for individual uploads
+   * Data is now backed up periodically (every 6 hours) instead
    */
   private async syncToZeroGStorage(
-    pattern: TrafficPattern, 
-    hotspot: TrafficHotspot | null, 
-    collection: TrafficDataCollection, 
+    pattern: TrafficPattern,
+    hotspot: TrafficHotspot | null,
+    collection: TrafficDataCollection,
     analysis: any
   ): Promise<void> {
-    try {
-      // Store individual traffic pattern
-      const patternData = {
-        type: 'individual_pattern',
-        pattern,
-        timestamp: new Date().toISOString()
-      };
-      
-      // await ZeroGStorageService.uploadTrafficData(patternData);
-      
-      // Store hotspot if it exists
-      if (hotspot) {
-        const hotspotData = {
-          type: 'individual_hotspot',
-          hotspot,
-          timestamp: new Date().toISOString()
-        };
-        
-        // await ZeroGStorageService.uploadTrafficData(hotspotData);
-      }
-      
-      // Store analysis data
-      const analysisData = {
-        type: 'traffic_analysis',
-        collection,
-        analysis,
-        pattern,
-        hotspot,
-        timestamp: new Date().toISOString()
-      };
-      
-      // await ZeroGStorageService.uploadTrafficData(analysisData);
-      
-    } catch (error) {
-      console.warn('0G Storage sync failed:', error);
-    }
+    // Disabled - data is backed up periodically instead of on every event
+    return;
   }
 
   /**
@@ -827,30 +794,42 @@ export class TrafficDataStorageService {
   /**
    * Create complete backup of all traffic data to 0G Storage
    */
-  async createZeroGBackup(): Promise<{ success: boolean; rootHash?: string; error?: string }> {
+  async createZeroGBackup(): Promise<{ success: boolean; rootHash?: string; txHash?: string; error?: string }> {
     try {
       const allData = {
-        trafficPatterns: this.trafficPatterns,
-        hotspots: this.hotspots,
-        alternativeRoutes: this.alternativeRoutes,
-        storedData: this.storedData
+        type: 'complete_traffic_backup',
+        data: {
+          trafficPatterns: Array.from(this.trafficPatterns.entries()),
+          hotspots: Array.from(this.hotspots.entries()),
+          alternativeRoutes: Array.from(this.alternativeRoutes.entries()),
+          storedData: Array.from(this.storedData.entries())
+        },
+        statistics: {
+          totalPatterns: this.trafficPatterns.size,
+          totalHotspots: this.hotspots.size,
+          totalRoutes: this.alternativeRoutes.size,
+          totalStored: this.storedData.size
+        },
+        timestamp: new Date().toISOString(),
+        version: '1.0'
       };
 
-      // const result = await ZeroGStorageService.uploadTrafficData(allData);
-      
-      if (result.success) {
-        console.log('✅ Complete traffic data backup created on 0G Storage');
-        console.log('📁 Backup Root Hash:', result.rootHash);
-      } else {
-        console.error('❌ Failed to create 0G backup:', result.error);
-      }
+      const result = await ZeroGStorageService.uploadTrafficData(allData);
 
-      return result;
+      console.log('✅ Complete traffic data backup created on 0G Storage');
+      console.log('📁 Backup Root Hash:', result.rootHash);
+      console.log('🔗 Transaction Hash:', result.txHash);
+
+      return {
+        success: true,
+        rootHash: result.rootHash,
+        txHash: result.txHash
+      };
     } catch (error) {
       console.error('Failed to create 0G backup:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

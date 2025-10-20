@@ -14,12 +14,29 @@ app.use(express.json());
 // 0G Broker instance
 let broker = null;
 
+// Simple upload queue to prevent nonce conflicts
+let uploadQueue = Promise.resolve();
+
+// Fallback defaults loader
+async function loadFallbackDefaults() {
+  try {
+    const { readFile } = await import('fs/promises');
+    const { join } = await import('path');
+    const file = join(process.cwd(), 'docs', 'models', 'providers-defaults.json');
+    const raw = await readFile(file, 'utf-8');
+    return JSON.parse(raw);
+  } catch (_e) {
+    return null;
+  }
+}
+
 // Initialize broker
 async function initBroker() {
   if (broker) return broker;
 
   try {
-    const provider = new ethers.JsonRpcProvider("https://evmrpc-testnet.0g.ai");
+    const rpcUrl = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || "https://evmrpc-testnet.0g.ai";
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
     const privateKey = process.env.VITE_ZEROG_PRIVATE_KEY || process.env.ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
     if (!privateKey) {
@@ -42,9 +59,18 @@ async function sendAIRequest(prompt, providerAddress) {
 
   // Get provider
   let provider = providerAddress;
+  try {
+    if (!provider) {
+      const services = await b.inference.listService();
+      provider = services[0]?.provider;
+    }
+  } catch (e) {
+    console.warn('listService failed, will use fallback defaults:', e?.message);
+  }
+
   if (!provider) {
-    const services = await b.inference.listService();
-    provider = services[0]?.provider;
+    const defaults = await loadFallbackDefaults();
+    provider = defaults?.defaultProvider;
   }
 
   if (!provider) {
@@ -52,10 +78,26 @@ async function sendAIRequest(prompt, providerAddress) {
   }
 
   // Acknowledge provider
-  await b.inference.acknowledgeProviderSigner(provider);
+  try {
+    await b.inference.acknowledgeProviderSigner(provider);
+  } catch (e) {
+    console.warn('acknowledgeProviderSigner failed, proceeding optimistically:', e?.message);
+  }
 
   // Get service metadata
-  const { endpoint, model } = await b.inference.getServiceMetadata(provider);
+  let endpoint, model;
+  try {
+    const meta = await b.inference.getServiceMetadata(provider);
+    endpoint = meta.endpoint;
+    model = meta.model;
+  } catch (e) {
+    const defaults = await loadFallbackDefaults();
+    model = defaults?.defaultModel || 'distilbert-base-uncased';
+    endpoint = endpoint; // keep undefined; will fail and trigger UI fallback
+    console.warn('getServiceMetadata failed, using default model:', model);
+  }
+
+  console.log('Service provider:', provider);
   console.log('Service endpoint:', endpoint);
   console.log('Service model:', model);
 
@@ -63,7 +105,12 @@ async function sendAIRequest(prompt, providerAddress) {
   const messages = [{ role: "user", content: prompt }];
 
   // Generate headers
-  const headers = await b.inference.getRequestHeaders(provider, JSON.stringify(messages));
+  let headers = {};
+  try {
+    headers = await b.inference.getRequestHeaders(provider, messages);
+  } catch (e) {
+    console.warn('getRequestHeaders failed, continuing with minimal headers:', e?.message);
+  }
 
   // Send request
   const response = await fetch(`${endpoint}/chat/completions`, {
@@ -108,6 +155,52 @@ async function getBalance() {
 // Routes
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+// Compute-ready endpoints for plug-and-play when network is back
+app.get('/api/compute/services', async (_req, res) => {
+  try {
+    const b = await initBroker();
+    const services = await b.inference.listService();
+    res.json({ services });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to list services' });
+  }
+});
+
+app.get('/api/compute/provider/:address/metadata', async (req, res) => {
+  try {
+    const b = await initBroker();
+    const { address } = req.params;
+    const meta = await b.inference.getServiceMetadata(address);
+    res.json(meta);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get metadata' });
+  }
+});
+
+app.post('/api/compute/ack', async (req, res) => {
+  try {
+    const b = await initBroker();
+    const { address } = req.body;
+    if (!address) return res.status(400).json({ error: 'Provider address is required' });
+    await b.inference.acknowledgeProviderSigner(address);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to acknowledge provider' });
+  }
+});
+
+app.post('/api/compute/inference', async (req, res) => {
+  try {
+    const prompt = String(req.body?.prompt || '');
+    const provider = req.body?.provider;
+    if (!prompt) { return res.status(400).json({ error: 'Prompt is required' }); }
+    const answer = await sendAIRequest(prompt, provider);
+    res.json({ answer });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Compute inference failed' });
+  }
 });
 
 app.get('/api/balance', async (_req, res) => {
@@ -181,77 +274,91 @@ app.post('/api/llama', async (req, res) => {
 
 // Save traffic data to 0G Storage
 app.post('/api/storage/save', async (req, res) => {
-  try {
-    const { data } = req.body;
-    if (!data) {
-      return res.status(400).json({ error: 'Data is required' });
-    }
+  const { data } = req.body;
+  if (!data) {
+    return res.status(400).json({ error: 'Data is required' });
+  }
 
-    // Import 0G Storage dynamically
-    const { ZgFile, Indexer } = await import('@0glabs/0g-ts-sdk');
+  // Queue this upload to prevent nonce conflicts
+  uploadQueue = uploadQueue.then(async () => {
+    try {
+      // Import 0G Storage dynamically
+      const { ZgFile, Indexer } = await import('@0glabs/0g-ts-sdk');
 
-    const RPC_URL = 'https://evmrpc-testnet.0g.ai/';
-    const INDEXER_RPC = 'https://indexer-storage-testnet-turbo.0g.ai';
-    const privateKey = process.env.VITE_ZEROG_PRIVATE_KEY || process.env.ZEROG_PRIVATE_KEY;
+      const RPC_URL = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || 'https://evmrpc-testnet.0g.ai/';
+      const INDEXER_RPC = process.env.ZEROG_INDEXER_RPC || process.env.VITE_0G_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+      const privateKey = process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
-    if (!privateKey) {
-      return res.status(500).json({ error: 'Storage private key not configured' });
-    }
-
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const signer = new ethers.Wallet(privateKey, provider);
-    const indexer = new Indexer(INDEXER_RPC);
-
-    const jsonData = JSON.stringify(data, null, 2);
-    const fileName = `traffic-${Date.now()}.json`;
-    const filePath = `/tmp/${fileName}`;
-
-    // Write to temp file
-    const { writeFileSync } = await import('fs');
-    writeFileSync(filePath, jsonData);
-
-    const file = await ZgFile.fromFilePath(filePath);
-    const [tree, treeErr] = await file.merkleTree();
-
-    if (treeErr) {
-      await file.close();
-      return res.status(500).json({ error: `Merkle tree error: ${treeErr}` });
-    }
-
-    const [tx, uploadErr] = await indexer.upload(file, RPC_URL, signer);
-
-    if (uploadErr) {
-      await file.close();
-      return res.status(500).json({ error: `Upload error: ${uploadErr}` });
-    }
-
-    await file.close();
-
-    const result = {
-      rootHash: tree?.rootHash() || '',
-      txHash: tx || '',
-      timestamp: new Date().toISOString()
-    };
-
-    // Save metadata to centralized database
-    const metadata = storageDB.addMetadata({
-      rootHash: result.rootHash,
-      txHash: result.txHash,
-      timestamp: result.timestamp,
-      dataType: data.type || 'unknown',
-      description: `${data.type || 'Data'} - ${new Date().toLocaleString()}`,
-      metadata: {
-        count: data.count,
-        destination: data.destination,
-        routeCount: data.routes?.length
+      if (!privateKey) {
+        throw new Error('Storage private key not configured');
       }
-    });
 
-    console.log('✅ Saved to 0G Storage:', result);
-    res.json({ ...result, id: metadata.id });
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      const signer = new ethers.Wallet(privateKey, provider);
+      const indexer = new Indexer(INDEXER_RPC);
 
+      const jsonData = JSON.stringify(data, null, 2);
+      const fileName = `traffic-${Date.now()}.json`;
+      const filePath = `/tmp/${fileName}`;
+
+      // Write to temp file
+      const { writeFileSync } = await import('fs');
+      writeFileSync(filePath, jsonData);
+
+      const file = await ZgFile.fromFilePath(filePath);
+      const [tree, treeErr] = await file.merkleTree();
+
+      if (treeErr) {
+        await file.close();
+        throw new Error(`Merkle tree error: ${treeErr}`);
+      }
+
+      const [tx, uploadErr] = await indexer.upload(file, RPC_URL, signer);
+
+      if (uploadErr) {
+        await file.close();
+        throw new Error(`Upload error: ${uploadErr}`);
+      }
+
+      await file.close();
+
+      const result = {
+        rootHash: tree?.rootHash() || '',
+        txHash: tx || '',
+        timestamp: new Date().toISOString()
+      };
+
+      // Save metadata to centralized database
+      const metadata = storageDB.addMetadata({
+        rootHash: result.rootHash,
+        txHash: result.txHash,
+        timestamp: result.timestamp,
+        dataType: data.type || 'unknown',
+        description: `${data.type || 'Data'} - ${new Date().toLocaleString()}`,
+        metadata: {
+          count: data.count,
+          destination: data.destination,
+          routeCount: data.routes?.length
+        }
+      });
+
+      console.log('✅ Saved to 0G Storage:', result);
+      return { ...result, id: metadata.id };
+
+    } catch (error) {
+      console.error('Storage save failed:', error);
+      throw error;
+    }
+  }).catch(err => {
+    // Catch to prevent queue from breaking
+    console.error('Queue error:', err);
+    throw err;
+  });
+
+  try {
+    const result = await uploadQueue;
+    res.json(result);
   } catch (error) {
-    console.error('Storage save failed:', error);
     res.status(500).json({ error: error?.message || 'Storage save failed' });
   }
 });
@@ -315,4 +422,95 @@ app.listen(PORT, () => {
   const hasPk = !!(process.env.PRIVATE_KEY || process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY);
   const hasRpc = !!(process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL);
   console.log(`0G server listening on :${PORT} (key:${hasPk}, rpc:${hasRpc})`);
+
+  // Eagerly initialize 0G broker for plug-and-play readiness
+  initBroker().then(async (b) => {
+    try {
+      const services = await b.inference.listService();
+      console.log(`🔎 Discovered ${services?.length || 0} compute services`);
+    } catch (e) {
+      console.warn('Compute service discovery failed (will retry on demand):', e?.message);
+    }
+  }).catch((e) => {
+    console.warn('0G broker init failed at startup (will init on demand):', e?.message);
+  });
+});
+
+app.post('/api/compute/train', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const model = String(body.model || 'distilbert-base-uncased');
+    const provider = String(body.provider || '');
+    const path = await import('path');
+    const datasetZipPath = String(body.datasetZipPath || path.join(process.cwd(), 'docs', 'model-usage', 'distilbert-usage.zip'));
+    const configPath = String(body.configPath || path.join(process.cwd(), 'docs', 'model-usage', 'distilbert-base-uncased', 'config.template.json'));
+
+    const { spawn } = await import('child_process');
+    const fs = await import('fs');
+
+    const key = process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY;
+    const rpc = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || 'https://evmrpc-testnet.0g.ai';
+    const ledgerCa = process.env.ZEROG_LEDGER_CA || process.env.LEDGER_CA || '';
+    const ftCa = process.env.ZEROG_FINE_TUNE_CA || process.env.FINE_TUNING_CA || '';
+
+    if (!key) return res.status(400).json({ error: 'Server key not configured' });
+    if (!provider) return res.status(400).json({ error: 'Provider address is required' });
+
+    const logsDir = path.join(process.cwd(), 'cli-output');
+    try { fs.mkdirSync(logsDir, { recursive: true }); } catch {}
+
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const logFile = path.join(logsDir, `train-${model}-${ts}.txt`);
+
+    const run = (cliArgs) => new Promise((resolve) => {
+      const p = spawn('npx', ['-y', '0g-compute-cli', ...cliArgs], { env: { ...process.env }, stdio: ['ignore','pipe','pipe'] });
+      let out = ''; let err = '';
+      p.stdout.on('data', d => { out += d.toString(); });
+      p.stderr.on('data', d => { err += d.toString(); });
+      p.on('close', (code) => resolve({ code, out, err }));
+    });
+
+    // 1) Calculate tokens
+    const calcArgs = ['calculate-token','--key', key,'--model', model,'--dataset-path', datasetZipPath,'--provider', provider];
+    const calc = await run(calcArgs);
+    const tokenMatch = (calc.out + calc.err).match(/tokens?:\s*(\d+)/i);
+    const tokenCount = tokenMatch ? Number(tokenMatch[1]) : undefined;
+
+    // 2) Upload dataset to 0G storage via CLI
+    const uploadArgs = ['upload','--data-path', datasetZipPath,'--key', key,'--rpc', rpc];
+    if (ledgerCa) uploadArgs.push('--ledger-ca', ledgerCa);
+    if (ftCa) uploadArgs.push('--fine-tuning-ca', ftCa);
+    const upload = await run(uploadArgs);
+    const hashMatch = (upload.out + upload.err).match(/hash:\s*([0-9a-fx]+)/i);
+    const datasetHash = hashMatch ? hashMatch[1] : undefined;
+
+    // 3) Create fine-tuning task
+    const createArgs = ['create-task','--key', key,'--provider', provider,'--model', model,'--rpc', rpc];
+    if (tokenCount) createArgs.push('--data-size', String(tokenCount));
+    if (datasetHash) createArgs.push('--dataset', datasetHash);
+    if (configPath) createArgs.push('--config-path', configPath);
+    if (ledgerCa) createArgs.push('--ledger-ca', ledgerCa);
+    if (ftCa) createArgs.push('--fine-tuning-ca', ftCa);
+    const created = await run(createArgs);
+
+    fs.writeFileSync(logFile, [
+      '=== calculate-token ===', calc.out, calc.err,
+      '=== upload ===', upload.out, upload.err,
+      '=== create-task ===', created.out, created.err
+    ].join('\n\n'));
+
+    res.json({
+      ok: created.code === 0,
+      tokenCount,
+      datasetHash,
+      logFile,
+      outputs: {
+        calculateToken: calc.out || calc.err,
+        upload: upload.out || upload.err,
+        createTask: created.out || created.err
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Training task failed' });
+  }
 });

@@ -1,0 +1,21 @@
+{
+  "defaultProvider": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+  "defaultModel": "distilbert-base-uncased",
+  "providers": [
+    {
+      "address": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+      "name": "Llama Provider",
+      "models": ["llama-3.1-8b-instruct", "distilbert-base-uncased"]
+    },
+    {
+      "address": "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3",
+      "name": "Qwen Provider",
+      "models": ["qwen2.5-7b-instruct"]
+    }
+  ],
+  "models": [
+    "distilbert-base-uncased",
+    "llama-3.1-8b-instruct",
+    "qwen2.5-7b-instruct"
+  ]
+}

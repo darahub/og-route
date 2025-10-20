@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import inject from '@rollup/plugin-inject';
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
@@ -17,7 +18,7 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       exclude: ['lucide-react', '@0glabs/0g-serving-broker'],
-      include: ['buffer', 'stream-browserify', 'crypto-browserify'],
+      include: ['buffer', 'stream-browserify'],
       esbuildOptions: { define: { global: 'globalThis' } },
     },
     define: {
@@ -41,8 +42,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         buffer: 'buffer',
         stream: 'stream-browserify',
-        crypto: 'crypto-browserify',
-        'node:crypto': 'crypto-browserify',
         os: 'os-browserify/browser',
         path: 'path-browserify',
         util: resolve(__dirname, 'src/polyfills/util-polyfill.js'),
@@ -60,11 +59,17 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         external: [],
+        plugins: [
+          inject({
+            Buffer: ['buffer', 'Buffer'],
+            process: 'process',
+          }),
+        ],
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom'],
             'ui-vendor': ['lucide-react', 'recharts'],
-            'crypto-vendor': ['ethers', 'crypto-browserify', 'buffer'],
+            'crypto-vendor': ['ethers', 'buffer'],
           },
         },
       },

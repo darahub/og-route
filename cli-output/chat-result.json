@@ -1,0 +1,10 @@
+{
+  "chat": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "answer": "{\"severity\":\"moderate\",\"confidence\":0.6,\"summary\":\"Traffic analysis temporarily unavailable. Using basic traffic data.\",\"recommendations\":[\"Check real-time traffic updates before departure\",\"Consider alternative routes if available\",\"Allow extra time for your journey\"],\"predictedCongestion\":45,\"bestTimeToTravel\":\"Current time is optimal for travel\",\"alternativeRoutesSuggestion\":\"Consider checking alternative routes for better traffic conditions\",\"estimatedDelay\":5}"
+    },
+    "text": null
+  }
+}

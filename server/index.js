@@ -260,18 +260,25 @@ app.post('/api/ledger/fund', async (req, res) => {
     const b = await initBroker();
     let funded = false;
 
-    // Try funding using wei BigInt (parseEther)
     try {
       const amountWei = ethers.parseEther(amountStr);
       await b.ledger.addLedger(amountWei);
       funded = true;
     } catch (e) {
-      // Fallback: try plain number if SDK expects token units
+      // If account already exists, deposit instead
+      const msg = e?.message || '';
       try {
-        await b.ledger.addLedger(Number(amountStr));
+        const amountWei = ethers.parseEther(amountStr);
+        await b.ledger.depositFund(amountWei);
         funded = true;
-      } catch (e2) {
-        return res.status(500).json({ error: e2?.message || 'Failed to fund ledger' });
+      } catch (e1) {
+        // Fallback: try plain number units
+        try {
+          await b.ledger.depositFund(Number(amountStr));
+          funded = true;
+        } catch (e2) {
+          return res.status(500).json({ error: e2?.message || e1?.message || 'Failed to fund or deposit to ledger' });
+        }
       }
     }
 
@@ -280,6 +287,34 @@ app.post('/api/ledger/fund', async (req, res) => {
     res.json({ ok: funded, ledger: normalized });
   } catch (error) {
     res.status(500).json({ error: error?.message || 'Failed to fund ledger' });
+  }
+});
+
+app.post('/api/ledger/deposit', async (req, res) => {
+  try {
+    const amountStr = String(req.body?.amount || '').trim();
+    if (!amountStr) {
+      return res.status(400).json({ error: 'amount is required (e.g., "1" for 1.0 OG)' });
+    }
+    const b = await initBroker();
+    let ok = false;
+    try {
+      const amountWei = ethers.parseEther(amountStr);
+      await b.ledger.depositFund(amountWei);
+      ok = true;
+    } catch (e) {
+      try {
+        await b.ledger.depositFund(Number(amountStr));
+        ok = true;
+      } catch (e2) {
+        return res.status(500).json({ error: e2?.message || e?.message || 'Deposit failed' });
+      }
+    }
+    const info = await b.ledger.getLedger();
+    const normalized = JSON.parse(JSON.stringify(info, (k, v) => typeof v === 'bigint' ? v.toString() : v));
+    res.json({ ok, ledger: normalized });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Deposit failed' });
   }
 });
 

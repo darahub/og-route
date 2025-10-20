@@ -1,0 +1,153 @@
+{
+  "health": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "ok": true
+    },
+    "text": null
+  },
+  "wallet": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "address": "0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0"
+    },
+    "text": null
+  },
+  "balance": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "balance": "1.050000000000000003"
+    },
+    "text": null
+  },
+  "ledger": {
+    "ok": true,
+    "status": 200,
+    "body": [
+      "0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0",
+      "849999800000000003",
+      "1050000000000000003",
+      [
+        "0",
+        "0"
+      ],
+      "",
+      [
+        "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+      ],
+      [
+        "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+      ]
+    ],
+    "text": null
+  },
+  "services": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "services": [
+        [
+          "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+          "chatbot",
+          "https://f07240Efa67755B5311bc75784a061eDB47165Dd-80.in1.phala.network:443",
+          "100000000000",
+          "400000000000",
+          "1760441428",
+          "phala/gpt-oss-120b",
+          "TeeML",
+          ""
+        ],
+        [
+          "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3",
+          "chatbot",
+          "https://3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3-80.in1.phala.network:443",
+          "490000000000",
+          "1140000000000",
+          "1760441030",
+          "phala/deepseek-chat-v3-0324",
+          "TeeML",
+          ""
+        ],
+        [
+          "0x6D233D2610c32f630ED53E8a7Cbf759568041f8f",
+          "chatbot",
+          "https://6D233D2610c32f630ED53E8a7Cbf759568041f8f-80.in1.phala.network:443",
+          "900000000000",
+          "150000000000",
+          "1760434463",
+          "phala/qwen2.5-vl-72b-instruct",
+          "TeeML",
+          ""
+        ],
+        [
+          "0x4f371f6eff4cb5a9471c9cf9bE32c729024b063C",
+          "chatbot",
+          "https://4f371f6eff4cb5a9471c9cf9bE32c729024b063C-80.in1.phala.network:443",
+          "490000000000",
+          "1140000000000",
+          "1760411681",
+          "phala/deepseek-chat-v3-0324",
+          "TeeML",
+          ""
+        ]
+      ]
+    },
+    "text": null
+  },
+  "transfer": [
+    {
+      "provider": "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3",
+      "res": {
+        "ok": false,
+        "status": 500,
+        "body": {
+          "error": "Error: Error (Arg0: Insufficient balance)"
+        },
+        "text": null
+      }
+    },
+    {
+      "provider": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+      "res": {
+        "ok": false,
+        "status": 500,
+        "body": {
+          "error": "Error: Error (Arg0: Insufficient balance)"
+        },
+        "text": null
+      }
+    }
+  ],
+  "ledgerAfter": {
+    "ok": true,
+    "status": 200,
+    "body": [
+      "0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0",
+      "849999800000000003",
+      "1050000000000000003",
+      [
+        "0",
+        "0"
+      ],
+      "",
+      [
+        "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+      ],
+      [
+        "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+      ]
+    ],
+    "text": null
+  },
+  "chat": {
+    "ok": true,
+    "status": 200,
+    "body": {
+      "answer": "{\"severity\":\"moderate\",\"confidence\":0.6,\"summary\":\"Traffic analysis temporarily unavailable. Using basic traffic data.\",\"recommendations\":[\"Check real-time traffic updates before departure\",\"Consider alternative routes if available\",\"Allow extra time for your journey\"],\"predictedCongestion\":45,\"bestTimeToTravel\":\"Current time is optimal for travel\",\"alternativeRoutesSuggestion\":\"Consider checking alternative routes for better traffic conditions\",\"estimatedDelay\":5}"
+    },
+    "text": null
+  }
+}

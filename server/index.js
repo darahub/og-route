@@ -501,22 +501,39 @@ app.post('/api/compute/train/traffic', async (req, res) => {
     const tokenCount = tokenMatch ? Number(tokenMatch[1]) : undefined;
     const dataSize = Number((body.dataSize ?? tokenCount ?? 1));
 
-    // 4) Upload dataset using 0G TS SDK
+    // 4) Upload dataset using 0G TS SDK with nonce-safe retry
     let datasetHash = '';
     let uploadTx = '';
     try {
       const { ZgFile, Indexer } = await import('@0glabs/0g-ts-sdk');
       const { ethers } = await import('ethers');
-      const providerEvm = new ethers.JsonRpcProvider(rpc);
-      const signer = new ethers.Wallet(key, providerEvm);
+      let providerEvm = new ethers.JsonRpcProvider(rpc);
+      let signer = new ethers.Wallet(key, providerEvm);
       const INDEXER_RPC = process.env.ZEROG_INDEXER_RPC || process.env.VITE_0G_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
       const indexer = new Indexer(INDEXER_RPC);
       const file = await ZgFile.fromFilePath(outputZip);
       const [tree, treeErr] = await file.merkleTree();
       if (treeErr) { await file.close(); throw new Error(`Merkle tree error: ${treeErr}`); }
-      const [tx, uploadErr] = await indexer.upload(file, rpc, signer);
-      uploadTx = tx || '';
-      if (uploadErr) { await file.close(); throw new Error(`Upload error: ${uploadErr}`); }
+
+      // Retry upload to bypass transient nonce conflicts
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const [tx, uploadErr] = await indexer.upload(file, rpc, signer);
+        uploadTx = tx || '';
+        if (!uploadErr) { lastErr = null; break; }
+        lastErr = uploadErr;
+        const msg = String(uploadErr || '');
+        if (/nonce too low|NONCE_EXPIRED/i.test(msg)) {
+          await new Promise((r) => setTimeout(r, 2000));
+          providerEvm = new ethers.JsonRpcProvider(rpc);
+          signer = new ethers.Wallet(key, providerEvm);
+          continue;
+        } else {
+          await file.close();
+          throw new Error(`Upload error: ${uploadErr}`);
+        }
+      }
+      if (lastErr) { await file.close(); throw new Error(`Upload error: ${lastErr}`); }
       await file.close();
       datasetHash = tree?.rootHash() || '';
     } catch (e) {

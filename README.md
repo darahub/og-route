@@ -1,365 +1,115 @@
-# 🚗 0G-Route - AI-Powered Traffic Prediction App
+# OG Route
 
-[![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.x-purple.svg)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.x-teal.svg)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Traffic analysis and routing app powered by 0G’s decentralized compute and storage.
 
-> An intelligent traffic monitoring and route optimization platform that leverages AI to provide real-time traffic insights and personalized route recommendations.
+This README covers how to run the project locally and, importantly, how to train the traffic model using the new training endpoint and UI.
 
-![0G-Route Demo](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=0G-Route+Demo)
+## Quick Start
 
-## ✨ Features
+- Install dependencies: `npm install`
+- Environment variables (local):
+  - `PORT=4000` (backend)
+  - `VITE_API_URL=http://localhost:4000`
+  - `VITE_ZEROG_PRIVATE_KEY=<your_wallet_private_key>`
+  - Optional chain settings:
+    - `ZEROG_RPC_URL=https://evmrpc-testnet.0g.ai`
+    - `ZEROG_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai`
+- Run backend: `npm run server`
+- Run frontend: `npm run dev`
+- Open the app: `http://localhost:5175/`
 
-### 🚦 Real-Time Traffic Intelligence
-- **Live traffic monitoring** with continuous data updates
-- **AI-powered traffic predictions** using advanced machine learning
-- **Traffic severity analysis** with color-coded alerts
-- **Historical traffic pattern analysis**
+## Training the Traffic Model
 
-### 🗺️ Smart Route Planning
-- **Alternative route suggestions** with time savings calculations
-- **Google Maps integration** for accurate navigation
-- **Plus Code detection and conversion** to readable addresses
-- **Multi-modal transportation options** (driving, walking, transit, cycling)
+You can train a small classifier on 0G using either the UI or a direct API call. Training prepares a dataset, uploads it to 0G Storage, and creates a fine‑tuning task via the 0G Serving Broker.
 
-### 🧠 AI-Powered Insights
-- **0G Compute AI integration** for intelligent traffic analysis
-- **Together AI integration** as backup incase 0G compute is down during traffic analysis
-- **Personalized route recommendations** based on user preferences
-- **Traffic pattern prediction** with confidence scores
-- **Smart routing algorithms** that adapt to real-time conditions
+### Option A: Train from the UI
 
-### 💾 Decentralized Data Storage
-- **0G Storage integration** for decentralized traffic data backup
-- **Automatic background sync** to 0G network without user intervention
-- **Periodic complete backups** every 6 hours
-- **Immutable data storage** with cryptographic verification
-- **Censorship-resistant** historical traffic data preservation
+- Open the app and use the “Train Traffic Model” modal.
+- Fill in:
+  - `Provider Address` (your 0G provider wallet address)
+  - `Model Name` (default: `distilbert-base-uncased`)
+  - `Train Size` and `Validation Size`
+- Click `Start Training`.
+- Use the `Watch status` button to monitor provider state.
 
-### 👤 User Experience
-- **No authentication required** - Simple and direct access
-- **Responsive design** optimized for all devices
-- **Dark/Light theme support** with system preference detection
-- **Real-time updates** with live data synchronization
+### Option B: Train via API
 
-## 🛠️ Technology Stack
-
-### Frontend
-- **React 18** - Modern UI library
-- **TypeScript** - Type-safe development
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first CSS framework
-
-### Backend & Services
-
-- **0G Compute AI** - AI-powered traffic insights and analysis
-- **0G Storage** - Decentralized traffic data storage and backup
-- **Google Maps API** - Mapping and routing services
-- **Google Places API** - Location search and geocoding
-- **Supabase** - Centralized cloud database for traffic data
-
-### Development Tools
-- **ESLint** - Code linting and quality
-- **PostCSS** - CSS processing and optimization
-- **Git** - Version control
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Git
-
-### Installation
-
-1. **Clone your repository**
-   ```bash
-   git clone <your-new-repo-url>
-   cd <your-repo-folder>
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Fill in your API keys in `.env`:
-   ```env
-   # Google Maps Configuration
-   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-   
-   # 0G Compute AI Configuration
-   PRIVATE_KEY=your_evm_key_private_for_0G_Compute
-   
-   # 0G Storage Configuration
-   VITE_0G_RPC_URL=https://evmrpc-testnet.0g.ai/
-   VITE_0G_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
-   VITE_0G_PRIVATE_KEY=your_ethereum_private_key_here
-   
-   # Supabase Configuration (Optional)
-   VITE_SUPABASE_URL=your_supabase_url_here
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-   
-   # Together AI Configuration (Backup)
-   VITE_TOGETHER_API_KEY=your_together_api_key_here
-   ```
-   
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open your browser**
-   Navigate to `http://localhost:5173`
-
-## 🔧 Configuration
-
-### Required API Keys
-
-#### Google Maps API Setup
-1. **Get a Google Maps API Key:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable the following APIs:
-     - Maps JavaScript API
-     - Places API
-     - Directions API
-     - Geocoding API
-   - Create credentials (API Key)
-   - Add billing information (required for API usage)
-
-2. **Configure the API Key:**
-   ```bash
-   cp env.example .env
-   ```
-   Then edit `.env` and replace `your_google_maps_api_key_here` with your actual API key.
-
-3. **API Key Restrictions (Recommended):**
-   - Restrict the API key to your domain
-   - Set usage quotas to prevent unexpected charges
-   - Monitor usage in Google Cloud Console
-
-#### Without API Key (Demo Mode)
-If you don't have a Google Maps API key, the app will work in demo mode with simulated traffic data. The simulation provides realistic traffic conditions based on time of day and location.
-
-#### Google Maps API
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Google Maps JavaScript API and Places API
-3. Create credentials and copy your API key
-
-#### 0G Compute AI Setup
-1. **Get your EVM private key** from your wallet
-2. **Get 0G testnet tokens** from the [0G faucet](https://faucet.0g.ai/)
-3. **Configure the private key** in your `.env` file
-
-#### 0G Storage Setup
-1. **Get your Ethereum private key** (can be the same as 0G Compute)
-2. **Ensure you have testnet tokens** for gas fees
-3. **Configure storage settings** in your `.env` file
-4. **Automatic sync** will start working in the background
-
-
-#### Together AI (backup incase 0G Compute is down)
-1. Sign up at [Together AI](https://together.ai)
-2. Generate an API key from your dashboard
-
-
-
-## 📱 Usage
-
-### Getting Started
-1. **Enable location access** when prompted
-2. **Search for a destination** using the search bar
-3. **View route alternatives** with time savings
-4. **Get AI insights** about traffic conditions
-5. **Start navigation** with your preferred app
-
-### Key Features
-
-#### Route Planning
-- Enter any destination in the search bar
-- View multiple route options with traffic data
-- Compare routes by time, distance, and traffic levels
-- Get personalized recommendations
-
-#### Traffic Monitoring
-- Real-time traffic conditions in your area
-- Traffic severity indicators (Low, Moderate, High, Severe)
-- Historical traffic patterns and predictions
-- Live traffic updates every few minutes
-
-#### AI Insights
-- Intelligent traffic analysis and recommendations
-- Predictive traffic modeling
-- Route optimization suggestions
-- Smart alerts for traffic incidents
-
-## 🚀 Deployment
-
-### Build for Production
-```bash
-npm run build
-```
-
-### Deploy to Netlify
-1. Connect your GitHub repository to Netlify
-2. Set build command: `npm run build`
-3. Set publish directory: `dist`
-4. Add environment variables in Netlify dashboard
-
-### Deploy to Vercel
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Commit your changes**
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-4. **Push to the branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **Open a Pull Request**
-
-### Development Guidelines
-- Follow TypeScript best practices
-- Use meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-
-## 🔧 0G Network Integration
-
-### 0G Compute AI Implementation
-**Location**: `src/services/0gComputeService.ts`
-- **AI Traffic Analysis**: Intelligent traffic condition analysis using 0G's decentralized AI
-- **Route Optimization**: AI-powered route recommendations and alternatives
-- **Predictive Modeling**: Traffic pattern prediction with confidence scores
-- **Fallback System**: Automatic fallback to Together AI if 0G Compute is unavailable
-
-### 0G Storage Implementation  
-**Location**: `src/services/0gStorageService.ts`
-- **Automatic Background Sync**: All traffic data automatically stored on 0G network
-- **Decentralized Backups**: Complete dataset backups every 6 hours
-- **Data Types Stored**:
-  - Individual traffic patterns with timestamps
-  - Traffic hotspots and problem areas
-  - Alternative route performance data
-  - Complete traffic analysis results
-- **Immutable Storage**: Cryptographic verification ensures data integrity
-- **Censorship Resistance**: Data cannot be blocked or removed
-
-### Data Flow Architecture
-```
-Traffic Data Collection
-        ↓
-Local Storage (Browser localStorage)
-        ↓
-Supabase Database (Centralized backup)
-        ↓
-0G Storage (Decentralized backup)
-        ↓
-Periodic Complete Backups (Every 6 hours)
-```
-
-## 📄 Project Structure
+Send a POST to the backend training endpoint with a small dataset:
 
 ```
-0G-Route/
-├── src/
-│   ├── components/          # React components
-│   │   ├── AITrafficInsights.tsx    # 0G Compute AI integration
-│   │   ├── AlternativeRoutes.tsx
-│   │   ├── AuthModal.tsx
-│   │   ├── DestinationSearch.tsx
-│   │   ├── Header.tsx
-│   │   └── ...
-│   ├── contexts/            # React contexts
-│   ├── hooks/               # Custom React hooks
-│   ├── services/            # API and external services
-│   │   ├── 0gComputeService.ts      # 0G Compute AI service
-│   │   ├── 0gStorageService.ts      # 0G Storage service
-│   │   ├── trafficDataStorage.ts    # Main storage with 0G integration
-│   │   ├── supabaseTrafficService.ts
-│   │   └── ...
-│   ├── types/               # TypeScript type definitions
-│   └── App.tsx              # Main application component
-
-├── public/                  # Static assets
-├── 0G_STORAGE_INTEGRATION.md # Detailed 0G Storage documentation
-└── package.json             # Dependencies and scripts
+POST /api/compute/train/traffic
+Content-Type: application/json
+{
+  "provider": "0xYourProviderAddress",
+  "model": "distilbert-base-uncased",
+  "dataset": {
+    "train": [ { "text": "Traffic is jammed on highway at 5pm", "label": 1 } ],
+    "validation": [ { "text": "Open roads near downtown", "label": 0 } ]
+  }
+}
 ```
 
-## 🔒 Privacy & Security
+Example curl:
 
-- **Location data** is processed locally and not stored permanently
-- **No authentication required** - Direct access to all features
-- **API keys** are properly secured and not exposed to clients
-- **Traffic data** is anonymized and aggregated
+```
+curl -X POST http://localhost:4000/api/compute/train/traffic \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider":"0xYourProviderAddress",
+    "model":"distilbert-base-uncased",
+    "dataset":{
+      "train":[{"text":"Traffic is jammed on highway heading north at 5pm","label":1},{"text":"Open roads early in the morning near downtown","label":0}],
+      "validation":[{"text":"Rush hour causes delays on main street","label":1}]
+    }
+  }'
+```
 
-## 📊 Performance
+The response includes:
+- `ok`: training task creation status
+- `tokenCount`: approximate token count in the dataset
+- `datasetHash`: 0G Storage root hash
+- `logFile`: path to the full training logs
 
-- **Lighthouse Score**: 95+ Performance
-- **Bundle Size**: Optimized with code splitting
-- **Load Time**: < 2 seconds on 3G networks
-- **Real-time Updates**: Sub-second data refresh
+### What Happens Under the Hood
 
-## 🐛 Troubleshooting
+The backend route `POST /api/compute/train/traffic` performs:
+- Build dataset files (`train.jsonl`, `validation.jsonl`) under `docs/model-usage/traffic-bundle-<timestamp>/`.
+- Zip the dataset bundle to `docs/model-usage/traffic-usage-<timestamp>.zip`.
+- Calculate tokens using `scripts/token-count.mjs`.
+- Upload to 0G Storage via `@0glabs/0g-ts-sdk` with a nonce‑safe retry (handles transient `nonce too low` / `NONCE_EXPIRED` errors).
+- Create a fine‑tuning task via `@0glabs/0g-serving-broker` CLI.
+- Write detailed logs to `cli-output/train-traffic-<model>-<timestamp>.txt`.
 
-### Common Issues
+### Monitoring & Logs
 
-**Location Access Denied**
-- Ensure location permissions are enabled in your browser
-- Try refreshing the page and allowing location access
+- Tail training logs: `tail -f cli-output/train-traffic-<model>-<timestamp>.txt`
+- Watch provider status via the UI button in the training modal.
 
-**API Key Errors**
-- Verify all API keys are correctly set in `.env`
-- Check that APIs are enabled in respective dashboards
+### Troubleshooting
 
-**Build Errors**
-- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
-- Update Node.js to version 18+
+- Proxy errors in the frontend: ensure the backend is running on `PORT=4000` and `VITE_API_URL` points to it.
+- Nonce conflicts during upload: the server auto‑retries. If it persists, restart the backend or increase delay in the retry section.
+- Node module type warnings: add `"type": "module"` to `package.json` if you prefer ESM consistently.
 
-## 📞 Support
+## 0G Integration Overview
 
-If you encounter any issues or have questions:
+- Compute: `@0glabs/0g-serving-broker` for inference and fine‑tuning tasks
+- Storage: `@0glabs/0g-ts-sdk` for uploading datasets and retrieving via root hash
+- RPC: `https://evmrpc-testnet.0g.ai`
+- Indexer: `https://indexer-storage-testnet-turbo.0g.ai`
 
-1. Create an issue in your repository with detailed information
-2. Contact the development team
+## Documentation
 
-## 📜 License
+- Third Wave summary: `3RD_WAVE.md`
+- Fourth Wave (training-focused improvements): `4TH_WAVE.md`
+- Deployment details: `DEPLOYMENT.md`
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 0G Integration Files
 
-## 🙏 Acknowledgments
-
-- **0G Labs** for 0G Compute AI and 0G Storage decentralized infrastructure
-- **Google Maps** for comprehensive mapping services
-- **Together AI** for backup AI capabilities
-- **Supabase** for centralized database services
-- **The React community** for excellent tooling and resources
-
----
-
-<div align="center">
-  <strong>Built with ❤️ by the 0G-Route Team</strong>
-  <br>
-</div> 
+- Compute (backend): `server/index.js` – broker initialization, `/api/chat` route, and compute helpers using `@0glabs/0g-serving-broker`.
+- Compute (frontend): `src/services/0gComputeService.ts` – broker initialization and traffic analysis requests.
+- Training (backend): `server/index.js` – `POST /api/compute/train/traffic` for dataset build, token counting, 0G Storage upload with nonce‑safe retry, and fine‑tuning task creation via 0G Serving Broker CLI.
+- Training utilities: `scripts/token-count.mjs` for token estimation; config template at `docs/model-usage/distilbert-base-uncased/config.template.json`.
+- Storage (backend): `server/index.js` – `/api/storage/save`, `/api/storage/download/:rootHash`, `/api/storage/metadata` endpoints using `@0glabs/0g-ts-sdk`.
+- Storage (frontend): `src/services/0gStorageService.ts` for upload/download; `src/services/storageMetadata.ts` for local indexing of stored data.
+- Serverless proxies (Vercel): `api/chat.ts`, `api/storage/save.ts`, `api/storage/metadata.ts` – thin routing to the backend API.

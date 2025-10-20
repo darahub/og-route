@@ -119,6 +119,10 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
   const [logContent, setLogContent] = useState<string>('');
   const [logError, setLogError] = useState<string>('');
   const [isRefreshingProvider, setIsRefreshingProvider] = useState<boolean>(false);
+  // Status polling state
+  const [isWatchingStatus, setIsWatchingStatus] = useState<boolean>(false);
+  const [currentServingModel, setCurrentServingModel] = useState<string>('');
+  const [pollError, setPollError] = useState<string>('');
 
   // Persist user overrides for provider/model
   useEffect(() => {
@@ -175,6 +179,22 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
     }
   };
 
+  // Poll provider metadata to detect when the model goes live
+  const watchStatus = async () => {
+    setPollError('');
+    setIsWatchingStatus(true);
+    setCurrentServingModel('');
+    try {
+      const res = await ZeroGComputeService.pollProviderModel(providerAddress, modelName, 5000, 5 * 60 * 1000);
+      if (res.currentModel) setCurrentServingModel(res.currentModel);
+      if (!res.live) setPollError('Model not live yet or timeout reached');
+    } catch (e: any) {
+      setPollError(e?.message || 'Status polling failed');
+    } finally {
+      setIsWatchingStatus(false);
+    }
+  };
+
   const startTraining = async () => {
     setIsTraining(true);
     setTrainResult(null);
@@ -192,6 +212,10 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
         } catch (e: any) {
           setLogError(e?.message || 'Failed to fetch training log');
         }
+      }
+      if (result?.ok) {
+        // Start watching provider status to detect when the model goes live
+        watchStatus();
       }
     } catch (e: any) {
       setTrainResult({ ok: false, error: e?.message || 'Training failed' });
@@ -310,6 +334,36 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
                   </pre>
                 </div>
               )}
+              {/* Provider status polling and one-click switch */}
+              <div className="mt-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-foreground/60">Provider Status</p>
+                  <button
+                    className="px-2 py-1 text-xs rounded-md border border-border bg-muted hover:bg-muted/70"
+                    onClick={watchStatus}
+                    disabled={isWatchingStatus}
+                  >
+                    {isWatchingStatus ? 'Watching...' : 'Watch status'}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-foreground/60 break-all">Current model: {currentServingModel || 'Unknown'}</p>
+                {pollError && (
+                  <p className="text-xs text-danger mt-1">{pollError}</p>
+                )}
+                {currentServingModel && currentServingModel.toLowerCase() === modelName.toLowerCase() && (
+                  <button
+                    className="mt-3 w-full px-3 py-1.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                    onClick={() => {
+                      if (providerAddress) localStorage.setItem('zg-default-provider', providerAddress);
+                      if (modelName) localStorage.setItem('zg-default-model', modelName);
+                      setShowTrainModal(false);
+                    }}
+                    aria-label="Use this trained model"
+                  >
+                    Use this model
+                  </button>
+                )}
+              </div>
               {trainResult?.error && (
                 <p className="text-xs text-danger mt-2">{trainResult.error}</p>
               )}
@@ -330,7 +384,7 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
             <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p className="text-sm font-medium">Location Required for AI Analysis</p>
             <button
-              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+              className="mt-3 px-3 py-1.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
               onClick={() => setShowTrainModal(true)}
               aria-label="Train traffic model"
             >
@@ -352,7 +406,7 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
             <p className="text-sm font-medium">Search for a destination to get AI analysis</p>
             <p className="text-xs text-foreground/60 mt-1">AI will analyze your route and provide smart recommendations</p>
             <button
-              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+              className="mt-3 px-3 py-1.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
               onClick={() => setShowTrainModal(true)}
               aria-label="Train traffic model"
             >
@@ -394,7 +448,7 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
           </div>
         )}
         <button
-          className="px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+          className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
           onClick={() => setShowTrainModal(true)}
           aria-label="Train traffic model"
         >

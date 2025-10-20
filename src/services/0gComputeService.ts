@@ -688,4 +688,38 @@ export class ZeroGComputeService {
       return { train, validation };
     }
   }
+  static async getProviderMetadata(address: string): Promise<{ endpoint?: string; model?: string } | null> {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    try {
+      const resp = await fetch(`${API_URL}/api/compute/provider/${address}/metadata`);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data;
+    } catch (_e) {
+      return null;
+    }
+  }
+  static async pollProviderModel(
+    address: string,
+    expectedModel: string,
+    intervalMs: number = 5000,
+    timeoutMs: number = 300000
+  ): Promise<{ live: boolean; currentModel?: string; endpoint?: string }> {
+    const start = Date.now();
+    let lastModel: string | undefined;
+    let lastEndpoint: string | undefined;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const meta = await this.getProviderMetadata(address);
+        const currentModel = meta?.model;
+        lastModel = currentModel || lastModel;
+        lastEndpoint = meta?.endpoint || lastEndpoint;
+        if (currentModel && currentModel.toLowerCase() === expectedModel.toLowerCase()) {
+          return { live: true, currentModel, endpoint: meta?.endpoint };
+        }
+      } catch (_e) {}
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+    return { live: false, currentModel: lastModel, endpoint: lastEndpoint };
+  }
 }

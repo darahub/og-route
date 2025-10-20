@@ -1,0 +1,20 @@
+=== calculate-token ===
+
+Approximate token count: 37
+
+
+
+
+=== upload ===
+
+Root: 0x9cea97d4c7285d4530ced36a886cd2209171ed83b10c5b01358a8a17c019f74b
+
+Tx: [object Object]
+
+=== create-task ===
+
+Verify provider...
+sending tx with gas price 2000000007n
+
+
+✗ Operation failed: bad address checksum

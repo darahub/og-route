@@ -1,0 +1,24 @@
+=== calculate-token ===
+
+Approximate token count: 1243
+
+
+
+
+=== upload ===
+
+Root: 0x5fcdf5dae2b9749a47956b4905ef3421eee759048c8e032e9c3853ff55931070
+
+Tx: [object Object]
+
+=== create-task ===
+
+Verify provider...
+Quote verification: [33mtrue[39m
+Provider signer already acknowledged
+Provider verified
+Creating task...
+Estimated fee: 372900000000000 (neuron), data size: 1243, train epochs: 3, price per token: 100000000000 (neuron)
+Created Task ID: 1b86c766-b99d-4fb2-8174-9128a1cd17c9
+
+

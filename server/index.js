@@ -14,6 +14,9 @@ app.use(express.json());
 // 0G Broker instance
 let broker = null;
 
+// Preferred provider to use for inference consistently
+const DEFAULT_PROVIDER = process.env.DEFAULT_PROVIDER || process.env.VITE_DEFAULT_PROVIDER || '0xf07240Efa67755B5311bc75784a061eDB47165Dd';
+
 // Simple upload queue to prevent nonce conflicts
 let uploadQueue = Promise.resolve();
 
@@ -57,15 +60,17 @@ async function initBroker() {
 async function sendAIRequest(prompt, providerAddress) {
   const b = await initBroker();
 
-  // Get provider
-  let provider = providerAddress;
-  try {
-    if (!provider) {
+  // Force a single provider unless explicitly overridden
+  let provider = providerAddress || DEFAULT_PROVIDER;
+
+  // Fallback: if default not set, try listing services
+  if (!provider) {
+    try {
       const services = await b.inference.listService();
       provider = services[0]?.provider;
+    } catch (e) {
+      console.warn('listService failed, will use fallback defaults:', e?.message);
     }
-  } catch (e) {
-    console.warn('listService failed, will use fallback defaults:', e?.message);
   }
 
   if (!provider) {
@@ -86,10 +91,12 @@ async function sendAIRequest(prompt, providerAddress) {
 
   // Ensure provider subaccount has funds for inference
   try {
-    const depositStr = process.env.INFERENCE_DEPOSIT || '1';
-    const amountWei = ethers.parseEther(depositStr);
-    await b.ledger.transferFund(provider, 'inference', amountWei);
-    console.log(`Transferred ${depositStr} OG to provider subaccount`);
+    const depositStr = process.env.INFERENCE_DEPOSIT || '0';
+    if (Number(depositStr) > 0) {
+      const amountWei = ethers.parseEther(depositStr);
+      await b.ledger.transferFund(provider, 'inference', amountWei);
+      console.log(`Transferred ${depositStr} OG to provider subaccount`);
+    }
   } catch (e) {
     console.warn('transferFund skipped:', e?.message);
   }

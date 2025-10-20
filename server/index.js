@@ -84,6 +84,16 @@ async function sendAIRequest(prompt, providerAddress) {
     console.warn('acknowledgeProviderSigner failed, proceeding optimistically:', e?.message);
   }
 
+  // Ensure provider subaccount has funds for inference
+  try {
+    const depositStr = process.env.INFERENCE_DEPOSIT || '1';
+    const amountWei = ethers.parseEther(depositStr);
+    await b.ledger.transferFund(provider, 'inference', amountWei);
+    console.log(`Transferred ${depositStr} OG to provider subaccount`);
+  } catch (e) {
+    console.warn('transferFund skipped:', e?.message);
+  }
+
   // Get service metadata
   let endpoint, model;
   try {
@@ -270,6 +280,38 @@ app.post('/api/ledger/fund', async (req, res) => {
     res.json({ ok: funded, ledger: normalized });
   } catch (error) {
     res.status(500).json({ error: error?.message || 'Failed to fund ledger' });
+  }
+});
+
+app.post('/api/ledger/transfer', async (req, res) => {
+  try {
+    const b = await initBroker();
+    const providerAddr = String(req.body?.provider || '').trim();
+    const serviceType = String(req.body?.serviceType || 'inference');
+    const amountStr = String(req.body?.amount || '').trim();
+
+    if (!providerAddr) {
+      return res.status(400).json({ error: 'provider is required' });
+    }
+    if (!amountStr) {
+      return res.status(400).json({ error: 'amount is required (e.g., "1" for 1.0 OG)' });
+    }
+
+    let amount;
+    try {
+      amount = ethers.parseEther(amountStr);
+    } catch (_e) {
+      amount = BigInt(amountStr);
+    }
+
+    await b.ledger.transferFund(providerAddr, serviceType, amount);
+
+    const info = await b.ledger.getLedger();
+    const normalized = JSON.parse(JSON.stringify(info, (k, v) => typeof v === 'bigint' ? v.toString() : v));
+
+    res.json({ ok: true, transferred: amount.toString(), serviceType, provider: providerAddr, ledger: normalized });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to transfer to provider subaccount' });
   }
 });
 

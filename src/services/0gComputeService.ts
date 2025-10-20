@@ -572,4 +572,120 @@ export class ZeroGComputeService {
       estimatedDelay: 5
     };
   }
+
+  /**
+   * Train a text classification model using stored traffic data
+   */
+  static async trainTrafficModel(
+    options: { provider: string; model?: string; trainSize?: number; validationSize?: number },
+    dataset?: { train: { text: string; label: number }[]; validation: { text: string; label: number }[] }
+  ): Promise<{ ok: boolean; tokenCount?: number; datasetHash?: string; logFile?: string; outputs?: any; error?: string }> {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const model = options.model || 'distilbert-base-uncased';
+      const provider = options.provider;
+      if (!provider) throw new Error('Provider address is required');
+
+      const payload = {
+        model,
+        provider,
+        dataset: dataset || this.buildTrafficDatasetFromStorage(options.trainSize || 50, options.validationSize || 20)
+      };
+
+      const resp = await fetch(`${API_URL}/api/compute/train/traffic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const contentType = resp.headers.get('content-type') || '';
+      const bodyText = await resp.text();
+      let parsed: any = null;
+      if (bodyText) {
+        if (contentType.includes('application/json')) { try { parsed = JSON.parse(bodyText); } catch {} }
+        else if (bodyText.trim().startsWith('{')) { try { parsed = JSON.parse(bodyText); } catch {} }
+      }
+
+      if (!resp.ok) {
+        const err = (parsed && parsed.error) ? parsed.error : (bodyText || `Training failed (${resp.status})`);
+        throw new Error(err);
+      }
+
+      return {
+        ok: !!parsed?.ok,
+        tokenCount: parsed?.tokenCount,
+        datasetHash: parsed?.datasetHash,
+        logFile: parsed?.logFile,
+        outputs: parsed?.outputs
+      };
+    } catch (error: any) {
+      return { ok: false, error: error?.message || 'Training failed' };
+    }
+  }
+
+  /**
+   * Fetch training log content from server
+   */
+  static async getTrainingLog(filePath: string): Promise<string> {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const url = `${API_URL}/api/compute/train/log?file=${encodeURIComponent(filePath)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch log (${resp.status})`);
+    }
+    const data = await resp.json();
+    return String(data?.content || '');
+  }
+
+  /**
+   * Build dataset from locally stored traffic analyses
+   */
+  private static buildTrafficDatasetFromStorage(trainSize: number = 50, validationSize: number = 20): { train: { text: string; label: number }[]; validation: { text: string; label: number }[] } {
+    try {
+      const raw = this.exportTrafficData();
+      const data = JSON.parse(raw || '{}');
+      const stored: any[] = Object.values(data?.storedData || {});
+
+      const labelMap: Record<string, number> = { low: 0, moderate: 1, high: 2, severe: 3 };
+      const toText = (s: any) => {
+        const loc = s?.collection?.location || { lat: 0, lng: 0 };
+        const a = s?.analysis || {};
+        const summary = a.summary || `Traffic ${a.severity || 'moderate'} with ${a.predictedCongestion || 50}% congestion`;
+        return `${summary}. Location ${Number(loc.lat).toFixed(4)},${Number(loc.lng).toFixed(4)}. Best time: ${a.bestTimeToTravel || 'Now'}. Estimated delay: ${a.estimatedDelay || 0} min.`;
+      };
+
+      const items = stored.map(s => ({ text: toText(s), label: labelMap[String(s?.analysis?.severity || 'moderate')] ?? 1 }));
+
+      // Fallback: create synthetic samples if not enough data
+      const ensureCount = (arr: { text: string; label: number }[], count: number) => {
+        const synthetics: { text: string; label: number }[] = [];
+        const templates = [
+          { text: 'Low congestion, smooth traffic, optimal route', label: 0 },
+          { text: 'Moderate traffic, some delays expected', label: 1 },
+          { text: 'High congestion, consider alternative routes', label: 2 },
+          { text: 'Severe traffic, significant delays, avoid peak hours', label: 3 }
+        ];
+        while (arr.length + synthetics.length < count) {
+          synthetics.push(templates[(arr.length + synthetics.length) % templates.length]);
+        }
+        return arr.concat(synthetics);
+      };
+
+      // Shuffle
+      const shuffled = items.slice().sort(() => Math.random() - 0.5);
+      const train = ensureCount(shuffled.slice(0, trainSize), trainSize);
+      const validation = ensureCount(shuffled.slice(trainSize, trainSize + validationSize), validationSize);
+      return { train, validation };
+    } catch (_e) {
+      const templates = [
+        { text: 'Low congestion, smooth traffic, optimal route', label: 0 },
+        { text: 'Moderate traffic, some delays expected', label: 1 },
+        { text: 'High congestion, consider alternative routes', label: 2 },
+        { text: 'Severe traffic, significant delays, avoid peak hours', label: 3 }
+      ];
+      const train = Array.from({ length: trainSize }, (_, i) => templates[i % templates.length]);
+      const validation = Array.from({ length: validationSize }, (_, i) => templates[i % templates.length]);
+      return { train, validation };
+    }
+  }
 }

@@ -1,3 +1,0 @@
-Adding account...
-sending tx with gas price 4000000007n
-✗ Operation failed: Account already exists. Use "deposit" to add funds or "get-account" to view details. (Address: 0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0)

@@ -1,3 +1,0 @@
-sending tx with gas price 4000000007n
-tx hash: 0x42083d77e880427fc0224cbd8325500354b0e6636048dc37fa506869aa82ec8a
-Provider acknowledged successfully!

@@ -109,7 +109,7 @@ async function sendAIRequest(prompt, providerAddress) {
   try {
     headers = await b.inference.getRequestHeaders(provider, messages);
   } catch (e) {
-    console.warn('getRequestHeaders failed, continuing with minimal headers:', e?.message);
+    console.warn('getRequestHeaders failed, continuing with zminimal headers:', e?.message);
   }
 
   // Send request
@@ -162,7 +162,8 @@ app.get('/api/compute/services', async (_req, res) => {
   try {
     const b = await initBroker();
     const services = await b.inference.listService();
-    res.json({ services });
+    const normalized = services.map(s => JSON.parse(JSON.stringify(s, (k, v) => typeof v === 'bigint' ? v.toString() : v)));
+    res.json({ services: normalized });
   } catch (error) {
     res.status(500).json({ error: error?.message || 'Failed to list services' });
   }
@@ -173,7 +174,8 @@ app.get('/api/compute/provider/:address/metadata', async (req, res) => {
     const b = await initBroker();
     const { address } = req.params;
     const meta = await b.inference.getServiceMetadata(address);
-    res.json(meta);
+    const normalized = JSON.parse(JSON.stringify(meta, (k, v) => typeof v === 'bigint' ? v.toString() : v));
+    res.json(normalized);
   } catch (error) {
     res.status(500).json({ error: error?.message || 'Failed to get metadata' });
   }
@@ -418,6 +420,161 @@ app.get('/api/storage/download/:rootHash', async (req, res) => {
   }
 });
 
+app.get('/api/compute/train/log', async (req, res) => {
+  try {
+    const file = String(req.query?.file || '');
+    if (!file) {
+      return res.status(400).json({ error: 'Log file path is required' });
+    }
+    const path = await import('path');
+    const fs = await import('fs');
+    const logsDir = path.join(process.cwd(), 'cli-output');
+    const resolved = path.resolve(file);
+    if (!resolved.startsWith(logsDir)) {
+      return res.status(400).json({ error: 'Invalid log file path' });
+    }
+    const content = fs.readFileSync(resolved, 'utf-8');
+    res.json({ content });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to read log file' });
+  }
+});
+
+app.post('/api/compute/train/traffic', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const model = String(body.model || 'distilbert-base-uncased');
+    const provider = String(body.provider || '');
+    const dataset = body.dataset || { train: [], validation: [] };
+
+    if (!provider) return res.status(400).json({ error: 'Provider address is required' });
+    if ((!dataset.train || dataset.train.length === 0) && (!dataset.validation || dataset.validation.length === 0)) {
+      return res.status(400).json({ error: 'Dataset is empty: provide train or validation examples' });
+    }
+
+    const path = await import('path');
+    const fs = await import('fs');
+    const { spawn, spawnSync } = await import('child_process');
+
+    const key = String(body.key || process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY || '');
+    const rpc = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || 'https://evmrpc-testnet.0g.ai';
+    const ledgerCa = process.env.ZEROG_LEDGER_CA || process.env.LEDGER_CA || '';
+    const ftCa = process.env.ZEROG_FINE_TUNE_CA || process.env.FINE_TUNING_CA || '';
+    if (!key) return res.status(400).json({ error: 'Server key not configured' });
+
+    const logsDir = path.join(process.cwd(), 'cli-output');
+    try { fs.mkdirSync(logsDir, { recursive: true }); } catch {}
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const logFile = path.join(logsDir, `train-traffic-${model}-${ts}.txt`);
+
+    // 1) Build dataset files
+    const docsDir = path.join(process.cwd(), 'docs', 'model-usage');
+    const bundleName = `traffic-bundle-${Date.now()}`;
+    const stagingDir = path.join(docsDir, bundleName);
+    try { fs.mkdirSync(stagingDir, { recursive: true }); } catch {}
+
+    const toJsonl = (arr) => (arr || []).map(x => JSON.stringify({ text: String(x?.text || ''), label: Number(x?.label || 0) })).join('\n') + '\n';
+    fs.writeFileSync(path.join(stagingDir, 'train.jsonl'), toJsonl(dataset.train));
+    fs.writeFileSync(path.join(stagingDir, 'validation.jsonl'), toJsonl(dataset.validation));
+
+    // 2) Zip the dataset bundle
+    const outputZip = path.join(docsDir, `traffic-usage-${Date.now()}.zip`);
+    const zipProc = spawnSync('zip', ['-q', '-r', outputZip, bundleName], { cwd: docsDir });
+    if (zipProc.status !== 0) {
+      fs.writeFileSync(logFile, [
+        '=== zip ===', zipProc.stderr?.toString() || 'Zip failed'
+      ].join('\n\n'));
+      return res.status(500).json({ error: 'Failed to create dataset zip' });
+    }
+
+    // 3) Calculate tokens
+    const scriptPath = path.join(process.cwd(), 'scripts', 'token-count.mjs');
+    const datasetDir = stagingDir;
+    const calcProc = spawn('node', [scriptPath, datasetDir], { env: { ...process.env }, stdio: ['ignore','pipe','pipe'] });
+    let calcOut = '', calcErr = '';
+    await new Promise((resolve) => {
+      calcProc.stdout.on('data', d => { calcOut += d.toString(); });
+      calcProc.stderr.on('data', d => { calcErr += d.toString(); });
+      calcProc.on('close', () => resolve());
+    });
+    const tokenMatch = (calcOut + calcErr).match(/Approximate token count:\s*(\d+)/i);
+    const tokenCount = tokenMatch ? Number(tokenMatch[1]) : undefined;
+    const dataSize = Number((body.dataSize ?? tokenCount ?? 1));
+
+    // 4) Upload dataset using 0G TS SDK
+    let datasetHash = '';
+    let uploadTx = '';
+    try {
+      const { ZgFile, Indexer } = await import('@0glabs/0g-ts-sdk');
+      const { ethers } = await import('ethers');
+      const providerEvm = new ethers.JsonRpcProvider(rpc);
+      const signer = new ethers.Wallet(key, providerEvm);
+      const INDEXER_RPC = process.env.ZEROG_INDEXER_RPC || process.env.VITE_0G_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+      const indexer = new Indexer(INDEXER_RPC);
+      const file = await ZgFile.fromFilePath(outputZip);
+      const [tree, treeErr] = await file.merkleTree();
+      if (treeErr) { await file.close(); throw new Error(`Merkle tree error: ${treeErr}`); }
+      const [tx, uploadErr] = await indexer.upload(file, rpc, signer);
+      uploadTx = tx || '';
+      if (uploadErr) { await file.close(); throw new Error(`Upload error: ${uploadErr}`); }
+      await file.close();
+      datasetHash = tree?.rootHash() || '';
+    } catch (e) {
+      fs.writeFileSync(logFile, [
+        '=== calculate-token ===', calcOut, calcErr,
+        '=== upload ===', e?.stack || e?.message || String(e)
+      ].join('\n\n'));
+      return res.status(500).json({ error: e?.message || 'Dataset upload failed' });
+    }
+    if (!datasetHash) {
+      fs.writeFileSync(logFile, [
+        '=== calculate-token ===', calcOut, calcErr,
+        '=== upload ===', `Tx: ${uploadTx}`
+      ].join('\n\n'));
+      return res.status(500).json({ error: 'Dataset upload failed' });
+    }
+
+    // 5) Create fine-tuning task
+    const configPath = path.join(process.cwd(), 'docs', 'model-usage', 'distilbert-base-uncased', 'config.template.json');
+    const cliPath = path.join(process.cwd(), 'node_modules', '@0glabs', '0g-serving-broker', 'cli.commonjs', 'cli', 'index.js');
+    const run = (cliArgs) => new Promise((resolve) => {
+      const p = spawn('node', [cliPath, ...cliArgs], { env: { ...process.env }, stdio: ['ignore','pipe','pipe'] });
+      let out = ''; let err = '';
+      p.stdout.on('data', d => { out += d.toString(); });
+      p.stderr.on('data', d => { err += d.toString(); });
+      p.on('close', (code) => resolve({ code, out, err }));
+    });
+
+    const createArgs = ['create-task','--key', key,'--provider', provider,'--model', model,'--rpc', rpc];
+    createArgs.push('--data-size', String(dataSize));
+    if (datasetHash) createArgs.push('--dataset', datasetHash);
+    if (configPath) createArgs.push('--config-path', configPath);
+    if (ledgerCa) createArgs.push('--ledger-ca', ledgerCa);
+    if (ftCa) createArgs.push('--fine-tuning-ca', ftCa);
+    const created = await run(createArgs);
+
+    fs.writeFileSync(logFile, [
+      '=== calculate-token ===', calcOut, calcErr,
+      '=== upload ===', `Root: ${datasetHash}`, `Tx: ${uploadTx}`,
+      '=== create-task ===', created.out, created.err
+    ].join('\n\n'));
+
+    res.json({
+      ok: created.code === 0,
+      tokenCount,
+      datasetHash,
+      logFile,
+      outputs: {
+        calculateToken: calcOut || calcErr,
+        upload: `Root: ${datasetHash}\nTx: ${uploadTx}`,
+        createTask: created.out || created.err
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Traffic training task failed' });
+  }
+});
+
 app.listen(PORT, () => {
   const hasPk = !!(process.env.PRIVATE_KEY || process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY);
   const hasRpc = !!(process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL);
@@ -434,83 +591,4 @@ app.listen(PORT, () => {
   }).catch((e) => {
     console.warn('0G broker init failed at startup (will init on demand):', e?.message);
   });
-});
-
-app.post('/api/compute/train', async (req, res) => {
-  try {
-    const body = req.body || {};
-    const model = String(body.model || 'distilbert-base-uncased');
-    const provider = String(body.provider || '');
-    const path = await import('path');
-    const datasetZipPath = String(body.datasetZipPath || path.join(process.cwd(), 'docs', 'model-usage', 'distilbert-usage.zip'));
-    const configPath = String(body.configPath || path.join(process.cwd(), 'docs', 'model-usage', 'distilbert-base-uncased', 'config.template.json'));
-
-    const { spawn } = await import('child_process');
-    const fs = await import('fs');
-
-    const key = process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY;
-    const rpc = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || 'https://evmrpc-testnet.0g.ai';
-    const ledgerCa = process.env.ZEROG_LEDGER_CA || process.env.LEDGER_CA || '';
-    const ftCa = process.env.ZEROG_FINE_TUNE_CA || process.env.FINE_TUNING_CA || '';
-
-    if (!key) return res.status(400).json({ error: 'Server key not configured' });
-    if (!provider) return res.status(400).json({ error: 'Provider address is required' });
-
-    const logsDir = path.join(process.cwd(), 'cli-output');
-    try { fs.mkdirSync(logsDir, { recursive: true }); } catch {}
-
-    const ts = new Date().toISOString().replace(/[:.]/g, '-');
-    const logFile = path.join(logsDir, `train-${model}-${ts}.txt`);
-
-    const run = (cliArgs) => new Promise((resolve) => {
-      const p = spawn('npx', ['-y', '0g-compute-cli', ...cliArgs], { env: { ...process.env }, stdio: ['ignore','pipe','pipe'] });
-      let out = ''; let err = '';
-      p.stdout.on('data', d => { out += d.toString(); });
-      p.stderr.on('data', d => { err += d.toString(); });
-      p.on('close', (code) => resolve({ code, out, err }));
-    });
-
-    // 1) Calculate tokens
-    const calcArgs = ['calculate-token','--key', key,'--model', model,'--dataset-path', datasetZipPath,'--provider', provider];
-    const calc = await run(calcArgs);
-    const tokenMatch = (calc.out + calc.err).match(/tokens?:\s*(\d+)/i);
-    const tokenCount = tokenMatch ? Number(tokenMatch[1]) : undefined;
-
-    // 2) Upload dataset to 0G storage via CLI
-    const uploadArgs = ['upload','--data-path', datasetZipPath,'--key', key,'--rpc', rpc];
-    if (ledgerCa) uploadArgs.push('--ledger-ca', ledgerCa);
-    if (ftCa) uploadArgs.push('--fine-tuning-ca', ftCa);
-    const upload = await run(uploadArgs);
-    const hashMatch = (upload.out + upload.err).match(/hash:\s*([0-9a-fx]+)/i);
-    const datasetHash = hashMatch ? hashMatch[1] : undefined;
-
-    // 3) Create fine-tuning task
-    const createArgs = ['create-task','--key', key,'--provider', provider,'--model', model,'--rpc', rpc];
-    if (tokenCount) createArgs.push('--data-size', String(tokenCount));
-    if (datasetHash) createArgs.push('--dataset', datasetHash);
-    if (configPath) createArgs.push('--config-path', configPath);
-    if (ledgerCa) createArgs.push('--ledger-ca', ledgerCa);
-    if (ftCa) createArgs.push('--fine-tuning-ca', ftCa);
-    const created = await run(createArgs);
-
-    fs.writeFileSync(logFile, [
-      '=== calculate-token ===', calc.out, calc.err,
-      '=== upload ===', upload.out, upload.err,
-      '=== create-task ===', created.out, created.err
-    ].join('\n\n'));
-
-    res.json({
-      ok: created.code === 0,
-      tokenCount,
-      datasetHash,
-      logFile,
-      outputs: {
-        calculateToken: calc.out || calc.err,
-        upload: upload.out || upload.err,
-        createTask: created.out || created.err
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error?.message || 'Training task failed' });
-  }
 });

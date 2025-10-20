@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Zap, Clock, AlertTriangle, TrendingUp, Lightbulb, Star, Target } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Brain, Zap, Clock, AlertTriangle, TrendingUp, Lightbulb, Star, Target, RefreshCcw } from 'lucide-react';
 import { ZeroGComputeService } from '../services/0gComputeService';
 import { ZeroGStorageService } from '../services/0gStorageService';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -18,6 +19,11 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
   className = '' 
 }) => {
   const { location: userLocation } = useGeolocation();
+  
+  // Default config (env overrides -> sensible fallbacks)
+  const DEFAULT_PROVIDER = import.meta.env.VITE_DEFAULT_PROVIDER_ADDRESS || '0xf07240Efa67755B5311bc75784a061eDB47165Dd';
+  const DEFAULT_MODEL = import.meta.env.VITE_DEFAULT_MODEL_NAME || 'distilbert-base-uncased';
+  
   const [insights, setInsights] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,26 +108,260 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
     }
   };
 
+  // Training UI state
+  const [showTrainModal, setShowTrainModal] = useState(false);
+  const [providerAddress, setProviderAddress] = useState<string>(DEFAULT_PROVIDER);
+  const [modelName, setModelName] = useState<string>(DEFAULT_MODEL);
+  const [trainSize, setTrainSize] = useState<number>(50);
+  const [validationSize, setValidationSize] = useState<number>(20);
+  const [isTraining, setIsTraining] = useState<boolean>(false);
+  const [trainResult, setTrainResult] = useState<any>(null);
+  const [logContent, setLogContent] = useState<string>('');
+  const [logError, setLogError] = useState<string>('');
+  const [isRefreshingProvider, setIsRefreshingProvider] = useState<boolean>(false);
+
+  // Persist user overrides for provider/model
+  useEffect(() => {
+    const savedProvider = localStorage.getItem('zg-default-provider');
+    const savedModel = localStorage.getItem('zg-default-model');
+    if (savedProvider) setProviderAddress(savedProvider);
+    if (savedModel) setModelName(savedModel);
+  }, []);
+
+  useEffect(() => {
+    if (providerAddress) localStorage.setItem('zg-default-provider', providerAddress);
+  }, [providerAddress]);
+
+  useEffect(() => {
+    if (modelName) localStorage.setItem('zg-default-model', modelName);
+  }, [modelName]);
+
+  // Lock body scroll when modal is open to prevent background interaction
+  useEffect(() => {
+    if (showTrainModal) {
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previous;
+      };
+    }
+  }, [showTrainModal]);
+  const refreshLog = async () => {
+    setLogError('');
+    if (!trainResult?.logFile) return;
+    try {
+      const content = await ZeroGComputeService.getTrainingLog(trainResult.logFile);
+      setLogContent(content);
+    } catch (e: any) {
+      setLogError(e?.message || 'Failed to fetch training log');
+    }
+  };
+
+  const refreshProvider = async () => {
+    try {
+      setIsRefreshingProvider(true);
+      const services = await ZeroGComputeService.getAvailableServices();
+      const latest = services && services[0]
+        ? (services[0].provider || services[0].providerAddress || services[0].address)
+        : null;
+      const next = latest || DEFAULT_PROVIDER;
+      setProviderAddress(next);
+      if (next) localStorage.setItem('zg-default-provider', next);
+    } catch (_e) {
+      setProviderAddress(DEFAULT_PROVIDER);
+      localStorage.setItem('zg-default-provider', DEFAULT_PROVIDER);
+    } finally {
+      setIsRefreshingProvider(false);
+    }
+  };
+
+  const startTraining = async () => {
+    setIsTraining(true);
+    setTrainResult(null);
+    setLogContent('');
+    setLogError('');
+    try {
+      const result = await ZeroGComputeService.trainTrafficModel(
+        { provider: providerAddress, model: modelName, trainSize, validationSize }
+      );
+      setTrainResult(result);
+      if (result?.logFile) {
+        try {
+          const content = await ZeroGComputeService.getTrainingLog(result.logFile);
+          setLogContent(content);
+        } catch (e: any) {
+          setLogError(e?.message || 'Failed to fetch training log');
+        }
+      }
+    } catch (e: any) {
+      setTrainResult({ ok: false, error: e?.message || 'Training failed' });
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  // Shared Training Modal renderer to avoid duplication
+  const renderTrainModal = () => (
+    showTrainModal ? (
+      createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowTrainModal(false)}></div>
+          <div className="relative z-[10000] w-full max-w-lg rounded-2xl p-6 border border-border bg-surface shadow-2xl">
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold text-foreground">Train Traffic Model</h3>
+            <p className="text-xs text-foreground/60">Build a small dataset from stored analyses and start fine-tuning via 0G.</p>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-foreground/60">Provider Address</label>
+                <button
+                  type="button"
+                  onClick={refreshProvider}
+                  disabled={isRefreshingProvider}
+                  aria-label="Refresh provider address"
+                  className="text-xs px-2 py-1 rounded-md border border-border bg-muted hover:bg-muted/70 flex items-center space-x-1"
+                >
+                  <RefreshCcw className="h-3.5 w-3.5" />
+                  <span>{isRefreshingProvider ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+              </div>
+              <input
+                type="text"
+                value={providerAddress}
+                onChange={(e) => setProviderAddress(e.target.value)}
+                placeholder={DEFAULT_PROVIDER}
+                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+              <p className="mt-1 text-[11px] text-foreground/50">Pre-filled with a default provider. Edit to override.</p>
+            </div>
+            <div>
+              <label className="text-xs text-foreground/60">Model Name</label>
+              <input
+                type="text"
+                value={modelName}
+                onChange={(e) => setModelName(e.target.value)}
+                placeholder={DEFAULT_MODEL}
+                className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-foreground/60">Train Size</label>
+                <input
+                  type="number"
+                  min={10}
+                  value={trainSize}
+                  onChange={(e) => setTrainSize(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-foreground/60">Validation Size</label>
+                <input
+                  type="number"
+                  min={5}
+                  value={validationSize}
+                  onChange={(e) => setValidationSize(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-end space-x-2">
+            <button
+              className="px-3 py-1.5 text-sm rounded-lg border border-border bg-muted hover:bg-muted/70"
+              onClick={() => setShowTrainModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-3 py-1.5 text-sm rounded-lg border border-accent bg-accent/10 hover:bg-accent/20"
+              onClick={startTraining}
+              disabled={isTraining || !providerAddress}
+            >
+              {isTraining ? 'Training...' : 'Start Training'}
+            </button>
+          </div>
+          {trainResult && (
+            <div className="mt-4 rounded-lg border border-border p-3">
+              <p className="text-sm">
+                Status: <span className={trainResult.ok ? 'text-success' : 'text-danger'}>{trainResult.ok ? 'OK' : 'Failed'}</span>
+              </p>
+              {trainResult?.tokenCount !== undefined && (
+                <p className="text-xs text-foreground/60">Token Count: {trainResult.tokenCount}</p>
+              )}
+              {trainResult?.datasetHash && (
+                <p className="text-xs text-foreground/60 break-all">Dataset Hash: {trainResult.datasetHash}</p>
+              )}
+              {trainResult?.logFile && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-foreground/60">Training Log</p>
+                    <button
+                      className="px-2 py-1 text-xs rounded-md border border-border bg-muted hover:bg-muted/70"
+                      onClick={refreshLog}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted p-2 text-xs whitespace-pre-wrap">
+                    {logError ? `Error: ${logError}` : (logContent || 'No log content yet.')}
+                  </pre>
+                </div>
+              )}
+              {trainResult?.error && (
+                <p className="text-xs text-danger mt-2">{trainResult.error}</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>,
+      document.body
+      )
+    ) : null
+  );
+
   if (!userLocation) {
     return (
-      <div className={`card rounded-2xl p-4 sm:p-6 ${className}`}>
-        <div className="text-center py-8 text-foreground/60">
-          <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <p className="text-sm font-medium">Location Required for AI Analysis</p>
+      <>
+        <div className={`card rounded-2xl p-4 sm:p-6 ${className}`}>
+          <div className="text-center py-8 text-foreground/60">
+            <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
+            <p className="text-sm font-medium">Location Required for AI Analysis</p>
+            <button
+              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+              onClick={() => setShowTrainModal(true)}
+              aria-label="Train traffic model"
+            >
+              Train Model
+            </button>
+          </div>
         </div>
-      </div>
+        {renderTrainModal()}
+      </>
     );
   }
 
   if (!hasActiveRoute || !destination) {
     return (
-      <div className={`card rounded-2xl p-4 sm:p-6 ${className}`}>
-        <div className="text-center py-8 text-foreground/60">
-          <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <p className="text-sm font-medium">Search for a destination to get AI analysis</p>
-          <p className="text-xs text-foreground/60 mt-1">AI will analyze your route and provide smart recommendations</p>
+      <>
+        <div className={`card rounded-2xl p-4 sm:p-6 ${className}`}>
+          <div className="text-center py-8 text-foreground/60">
+            <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
+            <p className="text-sm font-medium">Search for a destination to get AI analysis</p>
+            <p className="text-xs text-foreground/60 mt-1">AI will analyze your route and provide smart recommendations</p>
+            <button
+              className="mt-3 px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+              onClick={() => setShowTrainModal(true)}
+              aria-label="Train traffic model"
+            >
+              Train Model
+            </button>
+          </div>
         </div>
-      </div>
+        {renderTrainModal()}
+      </>
     );
   }
 
@@ -153,6 +393,13 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
             </span>
           </div>
         )}
+        <button
+          className="px-3 py-1.5 text-sm rounded-lg border border-border bg-surface hover:bg-muted transition"
+          onClick={() => setShowTrainModal(true)}
+          aria-label="Train traffic model"
+        >
+          Train Model
+        </button>
       </div>
 
       {error && (
@@ -257,6 +504,8 @@ export const AITrafficInsights: React.FC<AITrafficInsightsProps> = ({
           <p className="text-sm font-medium">Waiting for traffic data...</p>
         </div>
       )}
+      {/* Training Modal */}
+      {renderTrainModal()}
     </div>
   );
-}; 
+};

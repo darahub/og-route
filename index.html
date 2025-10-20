@@ -8,6 +8,13 @@
   </head>
   <body>
     <div id="root"></div>
+    <script type="module">
+      import { Buffer } from 'buffer';
+      // Provide Node-like globals early for vendor chunks
+      window.Buffer = Buffer;
+      window.global = window;
+      window.process = window.process || { env: {} };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

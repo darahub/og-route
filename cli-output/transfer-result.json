@@ -1,12 +1,32 @@
 {
   "provider": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
-  "amount": "1",
+  "amount": "0.5",
   "serviceType": "inference",
   "res": {
-    "ok": false,
-    "status": 500,
+    "ok": true,
+    "status": 200,
     "body": {
-      "error": "Error: Error (Arg0: Insufficient balance)"
+      "ok": true,
+      "transferred": "500000000000000000",
+      "serviceType": "inference",
+      "provider": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+      "ledger": [
+        "0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0",
+        "249999800000000003",
+        "1050000000000000003",
+        [
+          "0",
+          "0"
+        ],
+        "",
+        [
+          "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+          "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3"
+        ],
+        [
+          "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+        ]
+      ]
     },
     "text": null
   },
@@ -15,7 +35,7 @@
     "status": 200,
     "body": [
       "0xd32B97733d6A8d3c35fD22B096F4c8A8e6072ed0",
-      "749999800000000003",
+      "249999800000000003",
       "1050000000000000003",
       [
         "0",

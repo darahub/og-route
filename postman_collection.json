@@ -1,0 +1,309 @@
+{
+  "info": {
+    "name": "0G Route - Traffic API v1",
+    "description": "Standardized REST API for traffic conditions, predictions, routes, and locations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Traffic",
+      "item": [
+        {
+          "name": "Get Traffic Conditions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/api/v1/traffic/conditions?lat=6.5244&lng=3.3792&radius=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "traffic", "conditions"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "6.5244",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "3.3792",
+                  "description": "Longitude (required)"
+                },
+                {
+                  "key": "radius",
+                  "value": "5",
+                  "description": "Search radius in km (optional, default: 5)"
+                }
+              ]
+            },
+            "description": "Get current traffic conditions at a location"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Traffic Predictions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/api/v1/traffic/predictions?lat=6.5244&lng=3.3792&horizon=6h",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "traffic", "predictions"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "6.5244",
+                  "description": "Latitude (required)"
+                },
+                {
+                  "key": "lng",
+                  "value": "3.3792",
+                  "description": "Longitude (required)"
+                },
+                {
+                  "key": "horizon",
+                  "value": "6h",
+                  "description": "Time horizon: 1h, 3h, 6h, 12h (optional, default: 6h)"
+                }
+              ]
+            },
+            "description": "Get traffic predictions for the next N hours"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Traffic Hotspots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/api/v1/traffic/hotspots?lat=6.5244&lng=3.3792&radius=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "traffic", "hotspots"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "6.5244",
+                  "description": "Center latitude (optional)"
+                },
+                {
+                  "key": "lng",
+                  "value": "3.3792",
+                  "description": "Center longitude (optional)"
+                },
+                {
+                  "key": "radius",
+                  "value": "10",
+                  "description": "Search radius in km (optional, default: 10)"
+                }
+              ]
+            },
+            "description": "Get chronic traffic problem areas"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Traffic Cache",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditions\": [\n    {\n      \"id\": \"real-traffic-1\",\n      \"location\": {\n        \"lat\": 6.5244,\n        \"lng\": 3.3792,\n        \"address\": \"Victoria Island, Lagos\"\n      },\n      \"severity\": \"high\",\n      \"speed\": 25,\n      \"duration\": 45,\n      \"confidence\": 95\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4000/api/v1/traffic/update",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "traffic", "update"]
+            },
+            "description": "Update server-side traffic cache with current conditions"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        {
+          "name": "Analyze Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": {\n    \"lat\": 6.5245,\n    \"lng\": 3.3792\n  },\n  \"destination\": \"Lekki Phase 1, Lagos\",\n  \"options\": {\n    \"avoidTolls\": false,\n    \"avoidHighways\": false,\n    \"provideAlternatives\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4000/api/v1/routes/analyze",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "routes", "analyze"]
+            },
+            "description": "Analyze a route and get alternative suggestions with traffic impact"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Route Alternatives",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/api/v1/routes/alternatives?origin=6.5245,3.3792&destination=Lekki%20Phase%201&avoidTolls=false&avoidHighways=false",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "routes", "alternatives"],
+              "query": [
+                {
+                  "key": "origin",
+                  "value": "6.5245,3.3792",
+                  "description": "Origin as lat,lng (required)"
+                },
+                {
+                  "key": "destination",
+                  "value": "Lekki Phase 1",
+                  "description": "Destination address or lat,lng (required)"
+                },
+                {
+                  "key": "avoidTolls",
+                  "value": "false",
+                  "description": "Avoid toll roads (optional)"
+                },
+                {
+                  "key": "avoidHighways",
+                  "value": "false",
+                  "description": "Avoid highways (optional)"
+                }
+              ]
+            },
+            "description": "Get faster alternative routes for a trip"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Search Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/api/v1/locations/search?q=Lekki%20Phase%201&lat=6.5&lng=3.4&radius=15",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "locations", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Lekki Phase 1",
+                  "description": "Search query (required)"
+                },
+                {
+                  "key": "lat",
+                  "value": "6.5",
+                  "description": "Latitude to bias search (optional)"
+                },
+                {
+                  "key": "lng",
+                  "value": "3.4",
+                  "description": "Longitude to bias search (optional)"
+                },
+                {
+                  "key": "radius",
+                  "value": "15",
+                  "description": "Search radius in km (optional)"
+                }
+              ]
+            },
+            "description": "Search for destinations by name or address"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Directions",
+      "item": [
+        {
+          "name": "Get Directions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": {\n    \"lat\": 6.5245,\n    \"lng\": 3.3792\n  },\n  \"destination\": \"Lekki Phase 1, Lagos\",\n  \"options\": {\n    \"avoidTolls\": false,\n    \"avoidHighways\": false,\n    \"alternatives\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:4000/api/v1/directions",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "4000",
+              "path": ["api", "v1", "directions"]
+            },
+            "description": "Get detailed turn-by-turn directions with traffic information"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:4000/api/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "health"]
+        },
+        "description": "Check if API is running"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4000/api/v1"
+    },
+    {
+      "key": "latitude",
+      "value": "6.5244"
+    },
+    {
+      "key": "longitude",
+      "value": "3.3792"
+    }
+  ]
+}

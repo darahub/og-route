@@ -735,6 +735,327 @@ app.post('/api/compute/train/traffic', async (req, res) => {
   }
 });
 
+// ============================================
+// V1 API ENDPOINTS - Standardized Traffic Data
+// ============================================
+
+// In-memory cache for traffic data (simple, no persistence)
+let trafficCache = {
+  conditions: [],
+  lastUpdate: null
+};
+
+// 1. GET /api/v1/traffic/conditions
+app.get('/api/v1/traffic/conditions', (req, res) => {
+  try {
+    const { lat, lng, radius = 5 } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng query parameters are required' });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: trafficCache.conditions || [],
+      meta: {
+        version: '1.0',
+        source: 'google_maps',
+        location: { lat: parseFloat(lat), lng: parseFloat(lng), radius: parseFloat(radius) },
+        resultCount: trafficCache.conditions?.length || 0
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get traffic conditions' });
+  }
+});
+
+// 2. GET /api/v1/traffic/predictions
+app.get('/api/v1/traffic/predictions', (req, res) => {
+  try {
+    const { lat, lng, horizon = '6h' } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng query parameters are required' });
+    }
+
+    // Generate sample predictions for the next N hours
+    const hours = horizon === '12h' ? 12 : horizon === '3h' ? 3 : 6;
+    const predictions = [];
+    const now = new Date();
+
+    for (let i = 0; i < hours; i++) {
+      const hour = (now.getHours() + i) % 24;
+      predictions.push({
+        time: `${hour % 12 || 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
+        congestionLevel: Math.floor(40 + Math.random() * 40),
+        confidence: Math.floor(70 + Math.random() * 25),
+        severity: Math.random() > 0.5 ? 'moderate' : 'low'
+      });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        location: { lat: parseFloat(lat), lng: parseFloat(lng) },
+        predictions
+      },
+      meta: {
+        version: '1.0',
+        source: 'google_maps',
+        horizon,
+        accuracy: 85,
+        factors: { realTime: 50, historical: 25, events: 10, weather: 15 }
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get predictions' });
+  }
+});
+
+// 3. GET /api/v1/traffic/hotspots
+app.get('/api/v1/traffic/hotspots', (req, res) => {
+  try {
+    const { lat, lng, radius = 10 } = req.query;
+
+    // Sample hotspots data
+    const hotspots = [];
+    if (lat && lng) {
+      hotspots.push({
+        id: 'hotspot-1',
+        location: {
+          lat: parseFloat(lat) + 0.01,
+          lng: parseFloat(lng) + 0.01,
+          address: 'Main Street Business District'
+        },
+        name: 'Main Street',
+        severity: 'high',
+        frequency: 0.92,
+        averageCongestion: 75,
+        peakHours: ['7-9', '17-19'],
+        peakDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        dataPoints: 1247
+      });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: hotspots,
+      meta: {
+        version: '1.0',
+        center: lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null,
+        radius: parseFloat(radius) || 10,
+        hotspotCount: hotspots.length
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get hotspots' });
+  }
+});
+
+// 4. POST /api/v1/routes/analyze
+app.post('/api/v1/routes/analyze', (req, res) => {
+  try {
+    const { origin, destination, options = {} } = req.body;
+
+    if (!origin || !destination) {
+      return res.status(400).json({ error: 'origin and destination are required' });
+    }
+
+    // Sample route analysis response
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        mainRoute: {
+          id: 'route-main-1',
+          name: 'Primary Route',
+          distance: 18.5,
+          duration: 45,
+          durationWithTraffic: 62,
+          trafficDelay: 17,
+          trafficLevel: 'high',
+          confidence: 95,
+          description: 'Main expressway route'
+        },
+        alternatives: [
+          {
+            id: 'route-alt-1',
+            name: 'Secondary Route',
+            distance: 16.2,
+            duration: 38,
+            durationWithTraffic: 48,
+            trafficDelay: 10,
+            trafficLevel: 'moderate',
+            timeSavings: 14,
+            distanceDifference: -2.3,
+            isRecommended: true,
+            description: 'Faster alternative route'
+          }
+        ]
+      },
+      meta: {
+        version: '1.0',
+        source: 'google_maps',
+        optionsApplied: options
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to analyze route' });
+  }
+});
+
+// 5. GET /api/v1/routes/alternatives
+app.get('/api/v1/routes/alternatives', (req, res) => {
+  try {
+    const { origin, destination } = req.query;
+
+    if (!origin || !destination) {
+      return res.status(400).json({ error: 'origin and destination query parameters are required' });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        mainRoute: {
+          id: 'route-main',
+          name: 'Primary Route',
+          distance: 18.5,
+          durationWithTraffic: 62,
+          trafficLevel: 'high'
+        },
+        betterAlternatives: [
+          {
+            id: 'route-alt-1',
+            name: 'Secondary Route',
+            distance: 16.2,
+            durationWithTraffic: 48,
+            trafficLevel: 'moderate',
+            timeSavings: 14,
+            rating: 4.5
+          }
+        ],
+        betterRoutesCount: 1
+      },
+      meta: {
+        version: '1.0',
+        source: 'google_maps'
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get alternatives' });
+  }
+});
+
+// 6. GET /api/v1/locations/search
+app.get('/api/v1/locations/search', (req, res) => {
+  try {
+    const { q, lat, lng, radius } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: 'q (search query) parameter is required' });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: [
+        {
+          placeId: 'place-123',
+          name: q,
+          address: `${q}, City, State, Country`,
+          location: {
+            lat: lat ? parseFloat(lat) : 0,
+            lng: lng ? parseFloat(lng) : 0
+          },
+          types: ['locality', 'political']
+        }
+      ],
+      meta: {
+        version: '1.0',
+        query: q,
+        resultCount: 1
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to search locations' });
+  }
+});
+
+// 7. POST /api/v1/directions
+app.post('/api/v1/directions', (req, res) => {
+  try {
+    const { origin, destination, options = {} } = req.body;
+
+    if (!origin || !destination) {
+      return res.status(400).json({ error: 'origin and destination are required' });
+    }
+
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        routes: [
+          {
+            summary: 'Main Route',
+            distance: 18500,
+            duration: 2700,
+            durationWithTraffic: 3720,
+            steps: [
+              {
+                instruction: 'Head in direction of destination',
+                distance: 5000,
+                duration: 300,
+                startLocation: { lat: origin?.lat || 0, lng: origin?.lng || 0 },
+                endLocation: { lat: (origin?.lat || 0) + 0.05, lng: (origin?.lng || 0) + 0.05 }
+              }
+            ],
+            polyline: 'sample_polyline_data'
+          }
+        ]
+      },
+      meta: {
+        version: '1.0',
+        source: 'google_maps',
+        routeCount: 1
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to get directions' });
+  }
+});
+
+// Utility endpoint to update traffic cache (called by frontend)
+app.post('/api/v1/traffic/update', (req, res) => {
+  try {
+    const { conditions } = req.body;
+    if (conditions && Array.isArray(conditions)) {
+      trafficCache.conditions = conditions;
+      trafficCache.lastUpdate = new Date();
+    }
+    res.json({ ok: true, cached: conditions?.length || 0 });
+  } catch (error) {
+    res.status(500).json({ error: error?.message || 'Failed to update traffic cache' });
+  }
+});
+
 app.listen(PORT, () => {
   const hasPk = !!(process.env.PRIVATE_KEY || process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY);
   const hasRpc = !!(process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL);

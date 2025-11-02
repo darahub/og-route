@@ -255,6 +255,19 @@
       "description": "complete_traffic_backup - 10/20/2025, 12:30:21 PM",
       "metadata": {},
       "createdAt": "2025-10-20T11:30:21.420Z"
+    },
+    {
+      "id": "traffic-test_1762048940102_rxt5v8muf",
+      "rootHash": "0x3b9e83f23088263b1705f13176048933047ae73ef0ddaf7309a385d54a702052",
+      "txHash": {
+        "txHash": "0x88812a5ea4d352e72a038f117654b8011c778202b8765d3df64be1238056c849",
+        "rootHash": "0x3b9e83f23088263b1705f13176048933047ae73ef0ddaf7309a385d54a702052"
+      },
+      "timestamp": "2025-11-02T02:02:20.081Z",
+      "dataType": "traffic-test",
+      "description": "traffic-test - 11/2/2025, 3:02:20 AM",
+      "metadata": {},
+      "createdAt": "2025-11-02T02:02:20.102Z"
     }
   ]
 }

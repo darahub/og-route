@@ -534,16 +534,85 @@ The backend route `POST /api/compute/train/traffic` performs:
 
 ### Network Configuration
 
+**Mixed-Network Architecture:** Storage uses mainnet (permanent data), Compute uses testnet (not yet on mainnet)
+
 ```env
-# 0G Network
-ZEROG_RPC_URL=https://evmrpc-testnet.0g.ai
-ZEROG_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
+# ============================================
+# COMPUTE Configuration (Testnet)
+# ============================================
+# AI model inference and model training
+VITE_ZEROG_RPC_URL=https://evmrpc-testnet.0g.ai
+
+# ============================================
+# STORAGE Configuration (Mainnet)
+# ============================================
+# Permanent data storage with merkle verification
+ZEROG_STORAGE_RPC=https://evmrpc.0g.ai
+ZEROG_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
+
+# ============================================
+# Private Key (shared for both)
+# ============================================
 VITE_ZEROG_PRIVATE_KEY=your_wallet_private_key
 
 # Provider Configuration
 VITE_DEFAULT_PROVIDER_ADDRESS=0xf07240Efa67755B5311bc75784a061eDB47165Dd
 VITE_DEFAULT_MODEL_NAME=distilbert-base-uncased
 ```
+
+#### Why Mixed Networks?
+
+| Component | Network | Reason |
+|-----------|---------|--------|
+| **Compute** | Testnet | AI inference/training infrastructure not yet on mainnet |
+| **Storage** | Mainnet | Permanent merkle-verified storage for traffic data |
+
+This approach ensures:
+- ✅ Permanent, verified storage on mainnet
+- ✅ Cost-efficient compute operations on testnet
+- ✅ Flexible deployment timeline for future mainnet compute
+
+### Storage Endpoints (Mainnet)
+
+The following endpoints use **0G Mainnet** for permanent, merkle-verified data storage:
+
+```bash
+# Save traffic data to mainnet storage
+POST /api/storage/save
+Content-Type: application/json
+
+{
+  "data": {
+    "type": "traffic-conditions",
+    "timestamp": "2025-11-02T...",
+    "location": "Lagos, Nigeria"
+  }
+}
+
+# Response (mainnet transaction)
+{
+  "rootHash": "0x3b9e83f...",
+  "txHash": {
+    "txHash": "0x88812a5...",
+    "rootHash": "0x3b9e83f..."
+  },
+  "timestamp": "2025-11-02T..."
+}
+```
+
+```bash
+# Download traffic data from mainnet storage
+GET /api/storage/download/:rootHash
+
+# Returns original data stored on mainnet
+```
+
+**Key Points:**
+- ✅ Data uploaded to mainnet via `ZEROG_STORAGE_RPC` (https://evmrpc.0g.ai)
+- ✅ Data retrieved from mainnet via `ZEROG_STORAGE_INDEXER` (https://indexer-storage-turbo.0g.ai)
+- ✅ Merkle root hash verifies data integrity
+- ✅ Permanent storage - data persists on mainnet blockchain
+- ✅ Different from compute operations (which remain on testnet)
 
 ### Key Dependencies
 

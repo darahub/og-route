@@ -430,8 +430,9 @@ app.post('/api/storage/save', async (req, res) => {
       // Import 0G Storage dynamically
       const { ZgFile, Indexer } = await import('@0glabs/0g-ts-sdk');
 
-      const RPC_URL = process.env.ZEROG_RPC_URL || process.env.VITE_ZEROG_RPC_URL || 'https://evmrpc-testnet.0g.ai/';
-      const INDEXER_RPC = process.env.ZEROG_INDEXER_RPC || process.env.VITE_0G_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+      // Storage uses MAINNET, Compute uses TESTNET
+      const RPC_URL = process.env.ZEROG_STORAGE_RPC || 'https://evmrpc.0g.ai';
+      const INDEXER_RPC = process.env.ZEROG_STORAGE_INDEXER || 'https://indexer-storage-turbo.0g.ai';
       const privateKey = process.env.ZEROG_PRIVATE_KEY || process.env.VITE_ZEROG_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
       if (!privateKey) {
@@ -539,7 +540,7 @@ app.get('/api/storage/download/:rootHash', async (req, res) => {
     }
 
     const { Indexer } = await import('@0glabs/0g-ts-sdk');
-    const INDEXER_RPC = 'https://indexer-storage-testnet-turbo.0g.ai';
+    const INDEXER_RPC = process.env.ZEROG_STORAGE_INDEXER || 'https://indexer-storage-turbo.0g.ai';
 
     const indexer = new Indexer(INDEXER_RPC);
     const outputPath = `/tmp/download-${rootHash.slice(0, 10)}.json`;
